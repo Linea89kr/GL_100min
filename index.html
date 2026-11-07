@@ -1,1167 +1,263 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>무한의 오답 협동조합 (Wrong Answer Only: Wiki)</title>
-  <!-- Tailwind CSS CDN -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Phosphor Icons -->
-  <script src="https://unpkg.com/@phosphor-icons/web"></script>
-  <!-- Confetti for victory reveals -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-  <!-- Supabase JS -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
-
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              yellow: '#FFDE59',
-              purple: '#7B2CBF',
-              teal: '#00F0FF',
-              coral: '#FF4D6D',
-              dark: '#111827',
-              paper: '#FDFBF7'
-            }
-          },
-          boxShadow: {
-            'brutal': '4px 4px 0px 0px #111827',
-            'brutal-lg': '6px 6px 0px 0px #111827',
-            'brutal-sm': '2px 2px 0px 0px #111827',
-            'brutal-active': '1px 1px 0px 0px #111827'
-          }
-        }
-      }
-    }
-  </script>
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>100분 해커톤 게임 템플릿</title>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap');
+    :root {
+      color-scheme: light;
+    }
+
     * {
-      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      box-sizing: border-box;
     }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: sans-serif;
+      background: linear-gradient(180deg, #f7fbff 0%, #eef4ff 100%);
+      color: #1f2a44;
+      display: flex;
+      justify-content: center;
+      padding: 20px 14px;
     }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: #111827;
-      border-radius: 9999px;
+
+    main {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      border: 2px solid #dbe6ff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(56, 88, 164, 0.12);
+      display: grid;
+      gap: 16px;
     }
-    .badge-pop {
-      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      line-height: 1.2;
     }
-    @keyframes popIn {
-      0% { transform: scale(0.6); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+
+    .rule {
+      margin: 0;
+      font-size: 1rem;
+      color: #33446f;
+    }
+
+    .panel {
+      border: 1px solid #d9e3ff;
+      border-radius: 12px;
+      padding: 12px;
+      background: #f8faff;
+    }
+
+    .time {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0;
+      text-align: center;
+    }
+
+    .score {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 0;
+      text-align: center;
+    }
+
+    .controls,
+    .action {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      background: #315efb;
+      color: #ffffff;
+      cursor: pointer;
+      transition: transform 0.08s ease, opacity 0.2s ease;
+    }
+
+    button.secondary {
+      background: #6b7280;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #gain-score {
+      grid-column: 1 / -1;
+      min-height: 56px;
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 360px) {
+      main {
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 1.4rem;
+      }
+
+      .time {
+        font-size: 1.8rem;
+      }
     }
   </style>
 </head>
-<body class="bg-[#F6F4EE] text-brand-dark min-h-screen flex flex-col selection:bg-brand-yellow">
+<body>
+  <main>
+    <!-- 여기를 바꾸세요: 게임 제목 -->
+    <h1>🎮 내 게임 제목</h1>
+    <!-- 여기를 바꾸세요: 한 문장 규칙 -->
+    <p class="rule">60초 동안 버튼을 눌러 최고 점수를 만들어보세요!</p>
 
-  <!-- ================= TOP NAVIGATION / VIEW SWITCHER ================= -->
-  <header class="bg-white border-b-4 border-brand-dark px-3 py-2 sticky top-0 z-50">
-    <div class="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-2">
-      <!-- Title & Hackathon Badge -->
-      <div class="flex items-center gap-2">
-        <span class="text-2xl">⚡</span>
-        <div>
-          <h1 class="font-extrabold text-lg leading-tight tracking-tight flex items-center gap-1.5">
-            무한의 오답 협동조합
-            <span class="text-[10px] bg-brand-purple text-white px-1.5 py-0.5 rounded border border-brand-dark font-mono">100m MVP</span>
-          </h1>
-          <p class="text-[11px] text-gray-500 hidden sm:block">진짜 같은 오답을 지어내고 남을 속여라! 🎯</p>
-        </div>
-      </div>
-
-      <!-- Quick View Pill Selector (Demonstrator Bar) -->
-      <div class="flex items-center bg-gray-100 p-1 rounded-xl border-2 border-brand-dark text-xs font-bold gap-1 overflow-x-auto">
-        <button onclick="switchView('participant')" id="tab-participant" class="view-btn px-2.5 py-1 rounded-lg bg-brand-yellow border border-brand-dark shadow-brutal-sm flex items-center gap-1">
-          <i class="ph-bold ph-device-mobile"></i> <span>참가자 폰</span>
-        </button>
-        <button onclick="switchView('host')" id="tab-host" class="view-btn hidden px-2.5 py-1 rounded-lg hover:bg-white transition flex items-center gap-1">
-          <i class="ph-bold ph-crown"></i> <span>호스트(진행자)</span>
-        </button>
-        <button onclick="switchView('board')" id="tab-board" class="view-btn px-2.5 py-1 rounded-lg hover:bg-white transition flex items-center gap-1">
-          <i class="ph-bold ph-monitor"></i> <span>큰 화면(프로젝터)</span>
-        </button>
-        <button onclick="switchView('wiki')" id="tab-wiki" class="view-btn px-2.5 py-1 rounded-lg hover:bg-white transition flex items-center gap-1">
-          <i class="ph-bold ph-books"></i> <span>오답 위키</span>
-        </button>
-      </div>
-
-      <!-- Status Indicator -->
-      <div class="flex items-center gap-2">
-        <span id="current-phase-pill" class="text-xs font-black uppercase px-2.5 py-0.5 rounded-full border-2 border-brand-dark bg-yellow-200">
-          OPEN
-        </span>
-        <button onclick="newRoundFromInputs()" id="btn-new-round" title="새 라운드 (호스트)" class="hidden p-1.5 rounded-lg border-2 border-brand-dark bg-white hover:bg-red-50 text-xs text-gray-600 active:translate-y-0.5" aria-label="새 라운드">
-          <i class="ph-bold ph-arrows-counter-clockwise"></i>
-        </button>
-      </div>
-    </div>
-  </header>
-
-  <div id="config-banner" class="hidden bg-brand-coral text-white text-xs font-bold px-4 py-2 border-b-4 border-brand-dark text-center"></div>
-
-  <!-- ================= MAIN CONTAINER ================= -->
-  <main class="flex-1 max-w-6xl w-full mx-auto p-3 sm:p-4 md:p-6 flex flex-col justify-start">
-
-    <!-- ================= 1. PARTICIPANT VIEW ================= -->
-    <section id="view-participant" class="view-panel max-w-md mx-auto w-full flex flex-col gap-4">
-      <!-- Player Profile Card (Nickname) -->
-      <div class="bg-white border-3 border-brand-dark rounded-2xl p-3 shadow-brutal flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-9 h-9 rounded-xl bg-brand-teal border-2 border-brand-dark flex items-center justify-center font-black text-lg" id="p-avatar">
-            🦊
-          </div>
-          <div>
-            <div class="text-[11px] text-gray-500 font-bold uppercase">Player In Room <span id="p-room-code" class="text-brand-purple font-mono font-black">#ABC1</span></div>
-            <input type="text" id="p-nickname-input" value="" maxlength="8" onchange="updatePlayerNickname(this.value)" class="text-sm font-extrabold focus:outline-none border-b border-dashed border-gray-400 hover:border-black w-28 bg-transparent" placeholder="닉네임">
-          </div>
-        </div>
-        <div class="text-right">
-          <div class="text-[10px] text-gray-400 font-bold">내 누적 속인 수</div>
-          <div class="text-sm font-black text-brand-purple"><span id="p-my-fooled-count">0</span>명 낚음 🎣</div>
-        </div>
-      </div>
-
-      <!-- Phase 1: OPEN (오답 제출 + 피드 반응) -->
-      <div id="p-phase-open" class="space-y-4">
-        <!-- Question Box -->
-        <div class="bg-brand-paper border-3 border-brand-dark rounded-2xl p-4 shadow-brutal relative overflow-hidden">
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-xs font-black bg-brand-coral text-white px-2 py-0.5 rounded-full border border-brand-dark">ROUND 1</span>
-            <div class="text-xs font-black flex items-center gap-1 text-gray-700 bg-white px-2 py-0.5 rounded-lg border border-brand-dark">
-              <i class="ph-bold ph-timer"></i> <span id="p-timer">45</span>초
-            </div>
-          </div>
-          <p class="text-xs font-bold text-gray-500 mb-1">Q. 다음 질문에 대해 가장 그럴듯한 오답을 쓰세요!</p>
-          <h2 id="p-question-prompt" class="text-lg font-black leading-snug text-brand-dark break-keep">
-            JavaScript에서 `typeof NaN`의 결과값은 무엇일까요?
-          </h2>
-        </div>
-
-        <!-- Submission Form -->
-        <div class="bg-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal">
-          <label class="block text-xs font-extrabold text-gray-700 mb-1">
-            ✍️ 내 기발한 오답 제출하기
-            <span class="text-[11px] font-normal text-gray-400 ml-1">(정답 쓰면 들통남!)</span>
-          </label>
-          <div class="flex gap-2">
-            <input type="text" id="p-answer-input" placeholder="예: 'undefined', 'not-a-number'..." maxlength="40" class="flex-1 text-sm font-semibold border-2 border-brand-dark rounded-xl px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-brand-yellow">
-            <button onclick="handleParticipantSubmit()" class="bg-brand-yellow hover:bg-yellow-400 text-brand-dark font-black px-4 py-2.5 rounded-xl border-2 border-brand-dark shadow-brutal-sm active:translate-y-0.5 text-sm whitespace-nowrap">
-              제출
-            </button>
-          </div>
-          <p id="p-submit-hint" class="text-[11px] text-gray-500 mt-2 flex items-center gap-1">
-            <i class="ph-bold ph-info"></i> 제출 후 AI 판정관이 정답 여부와 유사도를 비동기 체크합니다.
-          </p>
-        </div>
-
-        <!-- Realtime Feed for Reactions -->
-        <div>
-          <div class="flex items-center justify-between mb-2 px-1">
-            <h3 class="text-xs font-black text-gray-700 flex items-center gap-1">
-              <i class="ph-bold ph-chats-circle"></i> 동료들의 오답 피드 (<span id="p-feed-count">0</span>)
-            </h3>
-            <span class="text-[10px] text-gray-500">이모지로 평가해주세요!</span>
-          </div>
-          <div id="p-feed-list" class="space-y-2.5 max-h-[340px] overflow-y-auto pr-1 custom-scrollbar">
-            <!-- Dynamic Cards Loaded Here -->
-          </div>
-        </div>
-      </div>
-
-      <!-- Phase 2: BLUFF (블러프 투표 라운드) -->
-      <div id="p-phase-bluff" class="space-y-4 hidden">
-        <div class="bg-brand-purple text-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal">
-          <div class="flex items-center gap-2 text-brand-yellow font-extrabold text-xs mb-1">
-            <i class="ph-bold ph-detective text-base"></i> 블러프 라운드: 진짜 정답을 찾아라!
-          </div>
-          <h2 class="text-base font-black leading-snug">
-            다음 중 동료들이 지어낸 오답 사이에 숨겨진 <span class="underline decoration-brand-yellow decoration-4 underline-offset-2">진짜 정답</span>은 무엇일까요?
-          </h2>
-          <p class="text-[11px] text-purple-200 mt-1">남의 오답에 속으면 그 사람에게 점수가 넘어갑니다!</p>
-        </div>
-
-        <!-- Bluff Choices List -->
-        <div id="p-bluff-options" class="space-y-2.5">
-          <!-- Dynamically populated options -->
-        </div>
-
-        <div id="p-bluff-voted-msg" class="hidden text-center p-4 bg-emerald-100 border-2 border-brand-dark rounded-xl text-xs font-bold text-emerald-800">
-          🎉 투표 완료! 호스트가 결과를 발표할 때까지 대기하세요.
-        </div>
-      </div>
-
-      <!-- Phase 3: REVEALED (결과 & 시상) -->
-      <div id="p-phase-revealed" class="space-y-4 hidden">
-        <div class="bg-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal text-center">
-          <span class="text-3xl">🏆</span>
-          <h2 class="text-xl font-black text-brand-dark mt-1">라운드 결과 발표!</h2>
-          <p class="text-xs text-gray-500">진짜 정답과 명예의 오답들을 확인하세요.</p>
-
-          <div class="mt-4 p-3 bg-emerald-50 border-2 border-dashed border-emerald-600 rounded-xl text-left">
-            <div class="text-[10px] font-black text-emerald-700 uppercase tracking-wide">진짜 정답 (True Answer)</div>
-            <div id="p-result-true-answer" class="text-lg font-black text-emerald-900 mt-0.5">number</div>
-          </div>
-        </div>
-
-        <!-- My Performance Card -->
-        <div class="bg-brand-yellow border-3 border-brand-dark rounded-2xl p-4 shadow-brutal">
-          <h3 class="text-xs font-black uppercase tracking-wider text-gray-800 mb-2">📊 내 이번 라운드 성적표</h3>
-          <div class="grid grid-cols-2 gap-2 text-center">
-            <div class="bg-white p-2.5 rounded-xl border-2 border-brand-dark">
-              <div class="text-[10px] text-gray-500 font-bold">내가 속인 동료</div>
-              <div id="p-stat-fooled" class="text-xl font-black text-brand-purple">2명</div>
-            </div>
-            <div class="bg-white p-2.5 rounded-xl border-2 border-brand-dark">
-              <div class="text-[10px] text-gray-500 font-bold">받은 😂 웃음 반응</div>
-              <div id="p-stat-laughs" class="text-xl font-black text-brand-coral">4개</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- LLM Explanation Preview for Mobile -->
-        <div class="bg-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal">
-          <div class="text-xs font-black text-brand-purple flex items-center gap-1.5 mb-2">
-            <i class="ph-bold ph-sparkle"></i> AI 판정관의 한 줄 오답 해설
-          </div>
-          <div id="p-result-explanation" class="text-xs text-gray-700 leading-relaxed bg-gray-50 p-3 rounded-xl border border-gray-200">
-            <!-- Dynamic Explanation -->
-          </div>
-        </div>
+    <section class="panel" aria-label="타이머">
+      <p id="time-display" class="time" aria-live="polite">60</p>
+      <div class="controls">
+        <button id="start-btn" type="button">시작</button>
+        <button id="stop-btn" type="button" class="secondary">정지</button>
       </div>
     </section>
 
-    <!-- ================= 2. HOST / ADMIN VIEW ================= -->
-    <section id="view-host" class="view-panel max-w-4xl mx-auto w-full space-y-5 hidden">
-      <!-- Host Control Header -->
-      <div class="bg-white border-3 border-brand-dark rounded-2xl p-4 md:p-5 shadow-brutal flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div class="flex items-center gap-2">
-            <span class="bg-brand-dark text-white text-xs font-black px-2.5 py-0.5 rounded-md">HOST DASHBOARD</span>
-            <span class="text-xs font-mono font-bold text-gray-500">ROOM: <span id="host-room-code">ABC1</span></span>
-          </div>
-          <h2 class="text-xl font-black text-brand-dark mt-1">100분 해커톤 진행 제어 센터</h2>
-          <p class="text-xs text-gray-500">문제 등록, 라운드 단계 전환, LLM 판정 뒤집기를 수행합니다.</p>
-        </div>
-        <!-- Quick Action Buttons -->
-        <div class="flex flex-wrap items-center gap-2">
-          <button onclick="injectSampleBotAnswers()" class="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-900 border-2 border-brand-dark rounded-xl text-xs font-black shadow-brutal-sm flex items-center gap-1">
-            <i class="ph-bold ph-robot"></i> 봇 참가자 4명 답변 주입
-          </button>
-          <button onclick="restartTimer()" id="host-timer-btn" class="px-3 py-2 bg-white hover:bg-gray-100 text-brand-dark border-2 border-brand-dark rounded-xl text-xs font-black shadow-brutal-sm flex items-center gap-1">
-            <i class="ph-bold ph-timer"></i> <span>타이머 60초 재시작</span>
-          </button>
-          <button onclick="requestExplanation()" class="px-3 py-2 bg-brand-yellow hover:bg-yellow-300 text-brand-dark border-2 border-brand-dark rounded-xl text-xs font-black shadow-brutal-sm flex items-center gap-1">
-            <i class="ph-bold ph-sparkle"></i> 해설 다시 생성
-          </button>
-        </div>
-      </div>
-
-      <!-- Phase Flow Controller (Stepped Workflow) -->
-      <div class="bg-brand-paper border-3 border-brand-dark rounded-2xl p-4 shadow-brutal">
-        <div class="text-xs font-black text-gray-600 mb-2 uppercase">라운드 단계 전환 컨트롤러</div>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <button onclick="setPhase('open')" id="btn-phase-open" class="phase-step-btn p-3 rounded-xl border-2 border-brand-dark font-black text-xs text-left bg-brand-yellow shadow-brutal-sm">
-            <span class="block text-[10px] text-gray-700">STEP 1</span>
-            1. 오답 접수 시작
-          </button>
-          <button onclick="setPhase('closed')" id="btn-phase-closed" class="phase-step-btn p-3 rounded-xl border-2 border-brand-dark font-black text-xs text-left bg-white hover:bg-gray-50 shadow-brutal-sm">
-            <span class="block text-[10px] text-gray-500">STEP 2</span>
-            2. 접수 마감 (검토)
-          </button>
-          <button onclick="setPhase('bluff')" id="btn-phase-bluff" class="phase-step-btn p-3 rounded-xl border-2 border-brand-dark font-black text-xs text-left bg-white hover:bg-gray-50 shadow-brutal-sm">
-            <span class="block text-[10px] text-gray-500">STEP 3</span>
-            3. 블러프 투표 시작
-          </button>
-          <button onclick="setPhase('revealed')" id="btn-phase-revealed" class="phase-step-btn p-3 rounded-xl border-2 border-brand-dark font-black text-xs text-left bg-white hover:bg-gray-50 shadow-brutal-sm">
-            <span class="block text-[10px] text-gray-500">STEP 4</span>
-            4. 결과 공개 & 해설
-          </button>
-        </div>
-      </div>
-
-      <!-- Question Config Box -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="md:col-span-2 bg-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal space-y-3">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xs font-black text-brand-dark flex items-center gap-1">
-              <i class="ph-bold ph-pencil-simple"></i> 출제 문제 설정
-            </h3>
-            <span class="text-[11px] text-gray-400">저장 시 새 라운드(OPEN)가 열립니다</span>
-          </div>
-
-          <div>
-            <label class="block text-[11px] font-bold text-gray-600 mb-1">문제 (Prompt)</label>
-            <input type="text" id="host-prompt-input" value="JavaScript에서 `typeof NaN`의 결과값은 무엇일까요?" class="w-full text-xs font-semibold border-2 border-brand-dark rounded-lg p-2 focus:ring-2 focus:ring-brand-yellow">
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold text-gray-600 mb-1">진짜 정답 (Real Answer)</label>
-              <input type="text" id="host-answer-input" value="number" class="w-full text-xs font-semibold border-2 border-brand-dark rounded-lg p-2 focus:ring-2 focus:ring-brand-yellow">
-            </div>
-            <div>
-              <label class="block text-[11px] font-bold text-gray-600 mb-1">허용 동치 표현 (쉼표 구분)</label>
-              <input type="text" id="host-variants-input" value="Number, 'number', 숫자형" class="w-full text-xs font-semibold border-2 border-brand-dark rounded-lg p-2 focus:ring-2 focus:ring-brand-yellow">
-            </div>
-          </div>
-
-          <div class="flex justify-end pt-1">
-            <button onclick="newRoundFromInputs()" class="px-3 py-1.5 bg-brand-dark text-white text-xs font-black rounded-lg hover:bg-gray-800">
-              이 문제로 새 라운드 시작
-            </button>
-          </div>
-        </div>
-
-        <!-- Quick Presets -->
-        <div class="bg-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal flex flex-col justify-between">
-          <div>
-            <h3 class="text-xs font-black text-brand-dark mb-2">⚡ 100분 추천 퀴즈 프리셋</h3>
-            <div class="space-y-1.5 text-xs">
-              <button onclick="loadPreset(0)" class="w-full text-left p-2 rounded-lg bg-gray-50 hover:bg-yellow-100 border border-brand-dark font-medium truncate">
-                JS: typeof NaN의 결과값
-              </button>
-              <button onclick="loadPreset(1)" class="w-full text-left p-2 rounded-lg bg-gray-50 hover:bg-yellow-100 border border-brand-dark font-medium truncate">
-                HTTP: 418 상태코드의 의미
-              </button>
-              <button onclick="loadPreset(2)" class="w-full text-left p-2 rounded-lg bg-gray-50 hover:bg-yellow-100 border border-brand-dark font-medium truncate">
-                Git: git rebase와 merge의 차이
-              </button>
-            </div>
-          </div>
-          <p class="text-[10px] text-gray-400 mt-2">클릭하면 입력칸이 채워집니다. "새 라운드 시작"으로 반영하세요.</p>
-        </div>
-      </div>
-
-      <!-- Host Submissions Management Table & LLM Override -->
-      <div class="bg-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal space-y-3">
-        <div class="flex items-center justify-between">
-          <div>
-            <h3 class="text-sm font-black text-brand-dark flex items-center gap-1.5">
-              <i class="ph-bold ph-shield-check"></i> 참가자 제출 관리 및 LLM 판정 뒤집기
-            </h3>
-            <p class="text-[11px] text-gray-500">LLM 오판 시 호스트가 🎯 실수로 정답 또는 오답으로 강제 수정할 수 있습니다.</p>
-          </div>
-          <span class="text-xs font-bold text-gray-500">총 <span id="host-submissions-count">0</span>건</span>
-        </div>
-
-        <div class="overflow-x-auto">
-          <table class="w-full text-left text-xs border-collapse">
-            <thead>
-              <tr class="border-b-2 border-brand-dark bg-gray-100 text-[11px] text-gray-600 font-black">
-                <th class="p-2">닉네임</th>
-                <th class="p-2">제출한 내용</th>
-                <th class="p-2">LLM 판정상태</th>
-                <th class="p-2">유사도 (0~3)</th>
-                <th class="p-2">반응/득표</th>
-                <th class="p-2 text-right">호스트 강제 오버라이드</th>
-              </tr>
-            </thead>
-            <tbody id="host-answers-tbody" class="divide-y divide-gray-200">
-              <!-- Dynamically populated rows -->
-            </tbody>
-          </table>
-        </div>
-      </div>
+    <section class="panel" aria-label="점수판">
+      <p id="score-display" class="score">현재 점수: 0</p>
+      <p id="best-score-display" class="score">최고 점수: 0</p>
     </section>
 
-    <!-- ================= 3. BIG SCREEN / PROJECTOR BOARD VIEW ================= -->
-    <section id="view-board" class="view-panel max-w-5xl mx-auto w-full space-y-6 hidden">
-      <!-- High Contrast Board Header -->
-      <div class="bg-brand-dark text-white border-4 border-brand-dark rounded-3xl p-6 shadow-brutal-lg flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <div class="flex items-center gap-2 mb-2">
-            <span class="bg-brand-coral text-white text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">PROJECTOR MODE</span>
-            <span class="text-brand-teal text-xs font-mono font-bold">LIVE STAGE • ROOM #<span id="board-room-code">ABC1</span></span>
-          </div>
-          <h2 id="board-question-prompt" class="text-2xl sm:text-3xl font-black leading-tight text-brand-yellow break-keep">
-            JavaScript에서 `typeof NaN`의 결과값은 무엇일까요?
-          </h2>
-        </div>
-        <div class="flex flex-col items-center justify-center bg-gray-800 border-2 border-gray-600 px-6 py-3 rounded-2xl text-center min-w-[130px]">
-          <span class="text-xs font-bold text-gray-400">남은 시간</span>
-          <span id="board-timer" class="text-3xl sm:text-4xl font-mono font-black text-brand-teal">45</span>
-        </div>
-      </div>
-
-      <!-- Big Board Mode A: Live Feed Wall (Phase: OPEN / CLOSED) -->
-      <div id="board-feed-section" class="space-y-4">
-        <div class="flex items-center justify-between px-2">
-          <div class="text-base font-black text-brand-dark flex items-center gap-2">
-            <i class="ph-bold ph-sparkle text-brand-purple"></i> 실시간 오답 피드 월
-            <span id="board-feed-counter" class="text-xs bg-brand-yellow border border-brand-dark px-2 py-0.5 rounded-full font-bold">5개 접수</span>
-          </div>
-          <span class="text-xs text-gray-500 font-semibold">휴대폰으로 오답을 입력하면 즉시 나타납니다!</span>
-        </div>
-
-        <div id="board-feed-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          <!-- Dynamic High-Impact Cards -->
-        </div>
-      </div>
-
-      <!-- Big Board Mode B: Dramatic Bluff Showcase (Phase: BLUFF) -->
-      <div id="board-bluff-section" class="space-y-4 hidden">
-        <div class="bg-brand-purple text-white border-4 border-brand-dark rounded-3xl p-6 shadow-brutal-lg text-center">
-          <span class="text-xs font-black uppercase tracking-widest text-brand-yellow">BLUFF ARENA</span>
-          <h3 class="text-2xl sm:text-3xl font-black mt-1">어떤 것이 진짜 정답일까요?</h3>
-          <p class="text-sm text-purple-200 mt-1">참가자들이 자신의 폰에서 투표를 진행 중입니다.</p>
-
-          <div class="mt-4 inline-flex items-center gap-2 bg-purple-950 px-4 py-2 rounded-xl text-xs font-mono font-bold text-brand-teal">
-            <i class="ph-bold ph-users"></i> 현재 투표 완료: <span id="board-vote-count" class="text-white text-sm font-black">0</span>명
-          </div>
-        </div>
-
-        <div id="board-bluff-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Shuffled Choices for Projector -->
-        </div>
-      </div>
-
-      <!-- Big Board Mode C: Grand Reveal & Winners (Phase: REVEALED) -->
-      <div id="board-reveal-section" class="space-y-6 hidden">
-        <!-- True Answer Spotlight -->
-        <div class="bg-emerald-400 text-brand-dark border-4 border-brand-dark rounded-3xl p-6 shadow-brutal-lg text-center">
-          <span class="text-xs font-black uppercase tracking-widest bg-white px-3 py-1 rounded-full border border-brand-dark">진짜 정답 공개</span>
-          <h2 id="board-true-answer-spotlight" class="text-4xl sm:text-5xl font-black mt-2 tracking-tight">
-            "number"
-          </h2>
-          <p id="board-true-answer-tip" class="text-xs font-bold text-emerald-950 mt-1"></p>
-        </div>
-
-        <!-- Awards Podium (2 Tracks: Comedy King & Master Deceiver) -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-          <!-- Track 1: Master Deceiver (가장 많이 속인 오답) -->
-          <div class="bg-brand-purple text-white border-4 border-brand-dark rounded-3xl p-6 shadow-brutal-lg relative overflow-hidden">
-            <div class="absolute -right-3 -top-3 text-7xl opacity-20 pointer-events-none">🎭</div>
-            <span class="text-xs font-black bg-brand-yellow text-brand-dark px-3 py-1 rounded-full border border-brand-dark uppercase">
-              👑 최고의 사기꾼상 (최다 득표)
-            </span>
-            <div class="mt-4">
-              <div id="board-winner-deceiver-body" class="text-2xl font-black text-brand-yellow leading-tight">
-                "undefined"
-              </div>
-              <div class="mt-2 text-xs text-purple-200 flex items-center justify-between">
-                <span>작성자: <strong id="board-winner-deceiver-nick" class="text-white font-extrabold">코드닌자</strong></span>
-                <span class="bg-white/20 px-2 py-0.5 rounded font-black"><span id="board-winner-deceiver-votes">4</span>명이나 속임!</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Track 2: Comedy Master (가장 웃긴 오답) -->
-          <div class="bg-brand-coral text-white border-4 border-brand-dark rounded-3xl p-6 shadow-brutal-lg relative overflow-hidden">
-            <div class="absolute -right-3 -top-3 text-7xl opacity-20 pointer-events-none">😂</div>
-            <span class="text-xs font-black bg-white text-brand-coral px-3 py-1 rounded-full border border-brand-dark uppercase">
-              👑 배꼽 도둑상 (최다 😂)
-            </span>
-            <div class="mt-4">
-              <div id="board-winner-comedy-body" class="text-2xl font-black text-white leading-tight">
-                "난(NaN) 빵이다"
-              </div>
-              <div class="mt-2 text-xs text-red-100 flex items-center justify-between">
-                <span>작성자: <strong id="board-winner-comedy-nick" class="text-white font-extrabold">인도커리</strong></span>
-                <span class="bg-white/20 px-2 py-0.5 rounded font-black">😂 <span id="board-winner-comedy-laughs">6</span>개 폭소</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- LLM Generated Comprehensive Explanation Box -->
-        <div class="bg-white border-4 border-brand-dark rounded-3xl p-6 shadow-brutal-lg space-y-3">
-          <div class="flex items-center gap-2">
-            <span class="w-8 h-8 rounded-xl bg-brand-yellow border-2 border-brand-dark flex items-center justify-center text-lg">💡</span>
-            <div>
-              <h3 class="text-lg font-black text-brand-dark">오답 협동조합 공식 해설 (LLM Analysis)</h3>
-              <p class="text-xs text-gray-500">흔히 틀리는 원인과 오개념을 정리했습니다.</p>
-            </div>
-          </div>
-
-          <div id="board-explanation-box" class="space-y-2 text-sm text-gray-800 leading-relaxed bg-brand-paper p-4 rounded-2xl border-2 border-brand-dark font-medium">
-            <!-- Dynamic LLM bullet points -->
-          </div>
-        </div>
-      </div>
+    <section class="action" aria-label="게임 액션">
+      <!-- 여기를 바꾸세요: 참가자용 핵심 게임 버튼 (원하면 버튼/행동을 교체하세요) -->
+      <button id="gain-score" type="button">점수 +1</button>
     </section>
-
-    <!-- ================= 4. WIKI ARCHIVE VIEW ================= -->
-    <section id="view-wiki" class="view-panel max-w-4xl mx-auto w-full space-y-5 hidden">
-      <div class="bg-brand-paper border-3 border-brand-dark rounded-2xl p-5 shadow-brutal">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <div class="flex items-center gap-1.5 text-brand-purple font-black text-xs uppercase">
-              <i class="ph-bold ph-books"></i> Wrong Answer Wiki Archive
-            </div>
-            <h2 class="text-xl font-black text-brand-dark mt-1">오답이 모여 지식이 되는 위키 📚</h2>
-            <p class="text-xs text-gray-600">교재에는 없는 동료들의 '실제 오개념' 모음집입니다.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-bold bg-white px-3 py-1.5 rounded-xl border border-brand-dark">
-              총 아카이브: <strong><span id="wiki-count">0</span>개 개념</strong>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Wiki Concept Cards (지난 라운드에서 자동 생성) -->
-      <div id="wiki-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
-    </section>
-
   </main>
 
-  <!-- ================= NOTIFICATION TOAST ================= -->
-  <div id="toast" class="fixed bottom-4 right-4 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
-    <div class="bg-brand-dark text-white text-xs font-bold px-4 py-2.5 rounded-xl border-2 border-brand-yellow shadow-brutal flex items-center gap-2">
-      <span id="toast-icon">✨</span>
-      <span id="toast-message">알림 메시지</span>
-    </div>
-  </div>
-
-  <!-- ================= JAVASCRIPT LOGIC ================= -->
   <script>
-    /* ==========================================================================
-       0. 설정 — 여기를 바꾸세요
-       SUPABASE_ANON_KEY 를 비워두면 Vercel 환경변수(SUPABASE_URL / SUPABASE_ANON_KEY)를
-       /api/config 로 받아온다. 로컬에서 파일로 열 때는 여기에 직접 넣어도 된다(anon key 는 공개 키).
-       ========================================================================== */
-    const SUPABASE_URL = 'https://dxolegtsnkgzjonjakje.supabase.co';
-    const SUPABASE_ANON_KEY = '';
-    const ROUND_SECONDS = 60;
-    const EMOJIS = ['😂', '🤔', '💀', '📚'];
+    // 여기를 바꾸세요: 게임 기본 설정
+    const GAME_DURATION_SECONDS = 60;
+    const BEST_SCORE_KEY = 'gl100-best-score';
 
-    const PRESETS = [
-      {
-        prompt: "JavaScript에서 `typeof NaN`의 결과값은 무엇일까요?",
-        answer: "number",
-        variants: ["'number'", "숫자형", "Number"],
-        bots: [['파이썬러버', 'NoneType'], ['자스장인', 'undefined'], ['클린코더', 'object'], ['디자이너', '난(NaN) 빵이다']]
-      },
-      {
-        prompt: "HTTP 418 상태 코드의 공식 메시지는 무엇일까요?",
-        answer: "I'm a teapot",
-        variants: ["teapot", "아이엠어티팟", "나는 찻주전자"],
-        bots: [['백엔드장인', 'Too Many Coffees'], ['프론트러버', 'Payment Expired'], ['신입개발자', 'Server Overheated'], ['디자이너', '차 마시러 감']]
-      },
-      {
-        prompt: "Git에서 작업 디렉토리 변경까지 전부 날려버리는 위험한 명령어는? (git reset ___)",
-        answer: "git reset --hard",
-        variants: ["reset --hard", "--hard", "git reset --hard HEAD"],
-        bots: [['깃린이', 'git reset --soft'], ['자스장인', 'git reset --mixed'], ['클린코더', 'git reset --force'], ['디자이너', 'git 지우개']]
+    let score = 0;
+    let timeLeft = GAME_DURATION_SECONDS;
+    let timerId = null;
+
+    const timeDisplay = document.getElementById('time-display');
+    const scoreDisplay = document.getElementById('score-display');
+    const bestScoreDisplay = document.getElementById('best-score-display');
+    const startButton = document.getElementById('start-btn');
+    const stopButton = document.getElementById('stop-btn');
+    const gainScoreButton = document.getElementById('gain-score');
+
+    function getBestScore() {
+      // 여기를 바꾸세요: 최고 점수 저장 키를 바꾸거나 저장 방식을 확장할 수 있습니다.
+      const savedValue = localStorage.getItem(BEST_SCORE_KEY);
+      const parsedValue = Number(savedValue);
+      return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : 0;
+    }
+
+    function setBestScore(nextBestScore) {
+      localStorage.setItem(BEST_SCORE_KEY, String(nextBestScore));
+    }
+
+    function renderTime() {
+      timeDisplay.textContent = String(timeLeft);
+    }
+
+    function renderScore() {
+      scoreDisplay.textContent = `현재 점수: ${score}`;
+    }
+
+    function renderBestScore() {
+      const bestScore = getBestScore();
+      bestScoreDisplay.textContent = `최고 점수: ${bestScore}`;
+    }
+
+    function updateBestScoreIfNeeded() {
+      const bestScore = getBestScore();
+      if (score > bestScore) {
+        setBestScore(score);
+        renderBestScore();
       }
-    ];
+    }
 
-    /* ==========================================================================
-       1. 상태
-       ========================================================================== */
-    const params = new URLSearchParams(window.location.search);
-    const ROOM = (params.get('room') || 'ABC1').toUpperCase().slice(0, 12);
-    const IS_HOST = params.get('host') === '1';
-    const IS_BOARD = params.get('board') === '1';
+    function setPlayingState(isPlaying) {
+      startButton.disabled = isPlaying;
+      gainScoreButton.disabled = !isPlaying;
+    }
 
-    function storageGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-    function storageSet(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
-
-    const me = {
-      deviceId: storageGet('wac_device') || (() => {
-        const id = 'd_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-        storageSet('wac_device', id);
-        return id;
-      })(),
-      nickname: storageGet('wac_nick') || ''
-    };
-
-    let sb = null;
-    let state = { question: null, answers: [], reactions: [], votes: [] };
-    let lastPhase = null;
-    let lastQuestionId = null;
-    let autoClosedFor = null;
-    let explainRequestedFor = null;
-
-    /* ==========================================================================
-       2. 초기화
-       ========================================================================== */
-    window.onload = async function () {
-      ['p-room-code'].forEach(id => document.getElementById(id).textContent = '#' + ROOM);
-      document.getElementById('host-room-code').textContent = ROOM;
-      document.getElementById('board-room-code').textContent = ROOM;
-      document.getElementById('p-nickname-input').value = me.nickname;
-      if (IS_HOST) {
-        document.getElementById('tab-host').classList.remove('hidden');
-        document.getElementById('btn-new-round').classList.remove('hidden');
+    function stopGame() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
       }
-      switchView(IS_HOST ? 'host' : IS_BOARD ? 'board' : 'participant');
+      updateBestScoreIfNeeded();
+      setPlayingState(false);
+    }
 
-      try {
-        await initSupabase();
-      } catch (e) {
-        showBanner(e.message);
+    function handleTimerTick() {
+      timeLeft -= 1;
+      renderTime();
+
+      if (timeLeft <= 0) {
+        stopGame();
+      }
+    }
+
+    function startGame() {
+      stopGame();
+      score = 0;
+      timeLeft = GAME_DURATION_SECONDS;
+      renderScore();
+      renderTime();
+      setPlayingState(true);
+
+      timerId = window.setInterval(handleTimerTick, 1000);
+    }
+
+    function stopGameByUser() {
+      stopGame();
+    }
+
+    function increaseScore() {
+      // 여기를 바꾸세요: 점수 계산 규칙, 콤보, 아이템 로직 등을 자유롭게 바꾸세요.
+      if (timerId === null) {
         return;
       }
-      await sb.from('rooms').upsert({ id: ROOM, name: ROOM }, { onConflict: 'id', ignoreDuplicates: true });
-      await loadState();
-      subscribe();
-      setInterval(tickTimer, 500);
-    };
-
-    async function initSupabase() {
-      let url = SUPABASE_URL, key = SUPABASE_ANON_KEY;
-      if (!key) {
-        try {
-          const cfg = await (await fetch('/api/config')).json();
-          url = cfg.supabaseUrl || url;
-          key = cfg.supabaseAnonKey;
-        } catch (e) {}
-      }
-      if (!key) throw new Error('Supabase anon key 가 없습니다. Vercel 환경변수 SUPABASE_ANON_KEY 를 설정하거나 index.html 상단 SUPABASE_ANON_KEY 에 넣으세요.');
-      sb = window.supabase.createClient(url, key);
+      score += 1;
+      renderScore();
     }
 
-    function showBanner(msg) {
-      const el = document.getElementById('config-banner');
-      el.textContent = '⚠️ ' + msg;
-      el.classList.remove('hidden');
+    function bindEvents() {
+      startButton.addEventListener('click', startGame);
+      stopButton.addEventListener('click', stopGameByUser);
+      gainScoreButton.addEventListener('click', increaseScore);
     }
 
-    /* ==========================================================================
-       3. 데이터 로드 & 실시간 구독
-       ========================================================================== */
-    async function loadState() {
-      const { data: q, error } = await sb.from('questions').select('*')
-        .eq('room_id', ROOM).order('id', { ascending: false }).limit(1).maybeSingle();
-      if (error) { showBanner('DB 읽기 실패: ' + error.message + ' (supabase/schema.sql 을 실행했나요?)'); return; }
-
-      if (!q) {
-        if (IS_HOST) { loadPreset(0); await newRoundFromInputs(); return; }
-        state = { question: null, answers: [], reactions: [], votes: [] };
-        renderAll();
-        return;
-      }
-
-      const [ansRes, voteRes] = await Promise.all([
-        sb.from('answers').select('*').eq('question_id', q.id).order('id', { ascending: false }),
-        sb.from('votes').select('*').eq('question_id', q.id)
-      ]);
-      const answers = ansRes.data || [];
-      let reactions = [];
-      if (answers.length) {
-        const { data } = await sb.from('reactions').select('*').in('answer_id', answers.map(a => a.id));
-        reactions = data || [];
-      }
-      state = { question: q, answers, reactions, votes: voteRes.data || [] };
-      onStateChanged();
+    function initialize() {
+      renderTime();
+      renderScore();
+      renderBestScore();
+      setPlayingState(false);
+      bindEvents();
     }
 
-    let refreshTimer = null;
-    function scheduleRefresh() {
-      clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(loadState, 150);
-    }
-
-    function subscribe() {
-      sb.channel('room-' + ROOM)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'questions', filter: `room_id=eq.${ROOM}` }, scheduleRefresh)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'answers' }, p => {
-          const row = p.new && p.new.question_id ? p.new : p.old;
-          if (!state.question || (row && row.question_id === state.question.id)) scheduleRefresh();
-        })
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reactions' }, p => {
-          if (state.answers.some(a => a.id === p.new.answer_id)) scheduleRefresh();
-        })
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, p => {
-          if (state.question && p.new.question_id === state.question.id) scheduleRefresh();
-        })
-        .subscribe();
-    }
-
-    function onStateChanged() {
-      const q = state.question;
-      if (q && (q.id !== lastQuestionId || q.phase !== lastPhase)) {
-        if (lastPhase !== null) showToast(`라운드 상태: [${q.phase.toUpperCase()}]`);
-        if (q.phase === 'revealed' && lastPhase && lastPhase !== 'revealed') triggerVictoryEffects();
-        lastQuestionId = q.id;
-        lastPhase = q.phase;
-      }
-      renderAll();
-    }
-
-    /* ==========================================================================
-       4. 파생 데이터
-       ========================================================================== */
-    function enrichedAnswers() {
-      const counts = {}, fooled = {};
-      state.reactions.forEach(r => {
-        counts[r.answer_id] = counts[r.answer_id] || {};
-        counts[r.answer_id][r.emoji] = (counts[r.answer_id][r.emoji] || 0) + 1;
-      });
-      state.votes.forEach(v => { if (v.picked_answer_id) fooled[v.picked_answer_id] = (fooled[v.picked_answer_id] || 0) + 1; });
-      return state.answers.map(a => ({
-        ...a,
-        deviceId: a.device_id,
-        reactions: counts[a.id] || {},
-        fooledCount: fooled[a.id] || 0
-      }));
-    }
-    function myReacted(answerId, emoji) {
-      return state.reactions.some(r => r.answer_id === answerId && r.emoji === emoji && r.device_id === me.deviceId);
-    }
-    function myVote() { return state.votes.find(v => v.device_id === me.deviceId); }
-    function bluffChoices() {
-      const q = state.question;
-      if (!q || !q.bluff_answer_ids) return [];
-      return q.bluff_answer_ids.map(id => {
-        const votes = state.votes.filter(v => (v.picked_answer_id || 0) === id).length;
-        if (id === 0) return { id: 0, body: q.answer, isReal: true, votes };
-        const a = state.answers.find(x => x.id === id);
-        return a ? { id, body: a.body, isReal: false, votes, deviceId: a.device_id } : null;
-      }).filter(Boolean);
-    }
-
-    async function api(path, body) {
-      const res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const json = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(json.error || res.statusText);
-      return json;
-    }
-
-    /* ==========================================================================
-       5. 뷰 전환
-       ========================================================================== */
-    function switchView(viewName) {
-      if (viewName === 'host' && !IS_HOST) return;
-      document.querySelectorAll('.view-panel').forEach(el => el.classList.add('hidden'));
-      document.querySelectorAll('.view-btn').forEach(btn => {
-        btn.classList.remove('bg-brand-yellow', 'border', 'border-brand-dark', 'shadow-brutal-sm');
-      });
-      const targetSection = document.getElementById(`view-${viewName}`);
-      const targetTab = document.getElementById(`tab-${viewName}`);
-      if (targetSection) targetSection.classList.remove('hidden');
-      if (targetTab) targetTab.classList.add('bg-brand-yellow', 'border', 'border-brand-dark', 'shadow-brutal-sm');
-      if (viewName === 'wiki' && sb) loadWiki();
-      renderAll();
-    }
-
-    /* ==========================================================================
-       6. 참가자 동작
-       ========================================================================== */
-    function updatePlayerNickname(val) {
-      const v = val.trim();
-      if (!v) return;
-      me.nickname = v;
-      storageSet('wac_nick', v);
-      showToast(`닉네임이 '${v}'(으)로 설정되었습니다.`);
-    }
-
-    async function handleParticipantSubmit() {
-      const input = document.getElementById('p-answer-input');
-      const text = input.value.trim();
-      if (!me.nickname) {
-        const nickInput = document.getElementById('p-nickname-input');
-        if (nickInput.value.trim()) updatePlayerNickname(nickInput.value);
-        else { nickInput.focus(); showToast('먼저 닉네임을 입력해주세요!', '⚠️'); return; }
-      }
-      if (!text) { showToast('오답 내용을 입력해주세요!', '⚠️'); return; }
-      if (!state.question || state.question.phase !== 'open') { showToast('지금은 오답 접수 시간이 아닙니다!', '⏳'); return; }
-
-      input.value = '';
-      const { data, error } = await sb.from('answers')
-        .insert({ question_id: state.question.id, device_id: me.deviceId, nickname: me.nickname, body: text.slice(0, 80) })
-        .select().single();
-      if (error) { input.value = text; showToast('제출 실패: ' + error.message, '⚠️'); return; }
-
-      showToast('오답 제출 완료! AI 판정관이 검증 중입니다...');
-      state.answers.unshift(data);
-      renderAll();
-      // 판정은 비동기 — 결과는 Realtime UPDATE 로 들어온다
-      api('/api/judge', { answer_id: data.id }).catch(e => console.warn('judge 실패', e));
-    }
-
-    async function reactToAnswer(answerId, emoji) {
-      if (myReacted(answerId, emoji)) return;
-      state.reactions.push({ answer_id: answerId, device_id: me.deviceId, emoji });
-      renderAll();
-      const { error } = await sb.from('reactions').insert({ answer_id: answerId, device_id: me.deviceId, emoji });
-      if (error && error.code !== '23505') { showToast('반응 실패: ' + error.message, '⚠️'); scheduleRefresh(); }
-    }
-
-    async function voteBluffChoice(choiceId) {
-      if (myVote()) return;
-      const choice = bluffChoices().find(c => c.id === choiceId);
-      if (choice && choice.deviceId === me.deviceId) { showToast('자기 오답은 고를 수 없어요!', '🙅'); return; }
-      state.votes.push({ question_id: state.question.id, device_id: me.deviceId, picked_answer_id: choiceId || null });
-      renderAll();
-      const { error } = await sb.from('votes').insert({ question_id: state.question.id, device_id: me.deviceId, picked_answer_id: choiceId || null });
-      if (error && error.code !== '23505') { showToast('투표 실패: ' + error.message, '⚠️'); scheduleRefresh(); return; }
-      showToast('투표가 기록되었습니다! 결과 공개를 기다려주세요.');
-    }
-
-    /* ==========================================================================
-       7. 호스트 동작
-       ========================================================================== */
-    async function setPhase(newPhase) {
-      if (!IS_HOST || !state.question) return;
-      const patch = { phase: newPhase };
-      if (newPhase === 'open') patch.ends_at = new Date(Date.now() + ROUND_SECONDS * 1000).toISOString();
-      if (newPhase === 'bluff') {
-        // 진짜 정답(0) + 그럴듯한 오답 최대 3개를 한 번 섞어서 저장 → 모든 기기가 같은 순서로 본다
-        const pool = enrichedAnswers().filter(a => a.verdict === 'wrong' || a.verdict === 'pending');
-        const top = pool.sort((a, b) => ((b.closeness ?? 1) - (a.closeness ?? 1)) || ((b.reactions['🤔'] || 0) - (a.reactions['🤔'] || 0))).slice(0, 3);
-        const ids = [0, ...top.map(a => a.id)];
-        for (let i = ids.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [ids[i], ids[j]] = [ids[j], ids[i]]; }
-        patch.bluff_answer_ids = ids;
-      }
-      const { error } = await sb.from('questions').update(patch).eq('id', state.question.id);
-      if (error) { showToast('단계 전환 실패: ' + error.message, '⚠️'); return; }
-      Object.assign(state.question, patch);
-      onStateChanged();
-      if (newPhase === 'revealed' && !state.question.explanation) requestExplanation();
-    }
-
-    async function requestExplanation() {
-      if (!IS_HOST || !state.question) return;
-      explainRequestedFor = state.question.id;
-      showToast('AI 해설을 생성하는 중...', '💡');
-      try {
-        const r = await api('/api/explain', { question_id: state.question.id });
-        if (!r.explanation) showToast(r.error || '해설을 만들지 못했어요', '⚠️');
-      } catch (e) {
-        showToast('해설 실패: ' + e.message, '⚠️');
-      }
-    }
-
-    async function restartTimer() {
-      if (!state.question) return;
-      const ends_at = new Date(Date.now() + ROUND_SECONDS * 1000).toISOString();
-      autoClosedFor = null;
-      await sb.from('questions').update({ ends_at }).eq('id', state.question.id);
-      state.question.ends_at = ends_at;
-      showToast(`타이머를 ${ROUND_SECONDS}초로 재시작했습니다.`);
-    }
-
-    async function injectSampleBotAnswers() {
-      if (!state.question || state.question.phase !== 'open') { showToast('OPEN 단계에서만 주입할 수 있어요.', '⚠️'); return; }
-      const preset = PRESETS.find(p => p.prompt === state.question.prompt);
-      const bots = preset ? preset.bots : [['봇1', '모르겠어요'], ['봇2', '아마도 42'], ['봇3', 'undefined'], ['봇4', '그건 버그가 아니라 기능']];
-      const rows = bots.map(([nick, body]) => ({ question_id: state.question.id, device_id: 'bot_' + nick, nickname: nick, body }));
-      const { data, error } = await sb.from('answers').insert(rows).select();
-      if (error) { showToast('봇 주입 실패: ' + error.message, '⚠️'); return; }
-      showToast(`봇 참가자 ${data.length}명의 답변이 추가되었습니다!`);
-      data.forEach(a => api('/api/judge', { answer_id: a.id }).catch(() => {}));
-    }
-
-    async function overrideVerdict(answerId, verdict) {
-      try {
-        await api('/api/override', { answer_id: answerId, verdict });
-        showToast(`판정이 '${verdict}'(으)로 수정되었습니다.`);
-        scheduleRefresh();
-      } catch (e) { showToast('뒤집기 실패: ' + e.message, '⚠️'); }
-    }
-
-    async function newRoundFromInputs() {
-      if (!IS_HOST) return;
-      const prompt = document.getElementById('host-prompt-input').value.trim();
-      const answer = document.getElementById('host-answer-input').value.trim();
-      const variants = document.getElementById('host-variants-input').value.split(',').map(s => s.trim()).filter(Boolean);
-      if (!prompt || !answer) { showToast('문제와 정답을 모두 입력하세요.', '⚠️'); return; }
-      const { error } = await sb.from('questions').insert({
-        room_id: ROOM, prompt, answer, accepted_variants: variants, phase: 'open',
-        ends_at: new Date(Date.now() + ROUND_SECONDS * 1000).toISOString()
-      });
-      if (error) { showToast('라운드 생성 실패: ' + error.message, '⚠️'); return; }
-      autoClosedFor = null;
-      showToast('새 라운드가 시작되었습니다!', '🚀');
-      await loadState();
-    }
-
-    function loadPreset(idx) {
-      const item = PRESETS[idx];
-      if (!item) return;
-      document.getElementById('host-prompt-input').value = item.prompt;
-      document.getElementById('host-answer-input').value = item.answer;
-      document.getElementById('host-variants-input').value = item.variants.join(', ');
-    }
-
-    /* ==========================================================================
-       8. 타이머 & 유틸
-       ========================================================================== */
-    function tickTimer() {
-      const q = state.question;
-      let text = '-';
-      if (q && q.phase === 'open' && q.ends_at) {
-        const left = Math.max(0, Math.ceil((new Date(q.ends_at) - Date.now()) / 1000));
-        text = String(left);
-        // 시간이 다 되면 호스트 화면이 자동으로 마감
-        if (left === 0 && IS_HOST && autoClosedFor !== q.id) { autoClosedFor = q.id; setPhase('closed'); }
-      }
-      document.getElementById('p-timer').textContent = text;
-      document.getElementById('board-timer').textContent = text;
-    }
-
-    function triggerVictoryEffects() {
-      try { confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } }); } catch (e) {}
-    }
-
-    function showToast(message, icon = '✨') {
-      const toast = document.getElementById('toast');
-      document.getElementById('toast-message').textContent = message;
-      document.getElementById('toast-icon').textContent = icon;
-      toast.classList.remove('translate-y-20', 'opacity-0');
-      toast.classList.add('translate-y-0', 'opacity-100');
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => {
-        toast.classList.add('translate-y-20', 'opacity-0');
-        toast.classList.remove('translate-y-0', 'opacity-100');
-      }, 2600);
-    }
-
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return '';
-      return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
-    }
-
-    // 해설 텍스트 → HTML ([정답] / [오답N] / [팁] 라벨 강조)
-    function explanationHtml(text) {
-      if (!text) return '<div class="text-gray-500">💡 AI 해설을 생성하는 중입니다...</div>';
-      return text.split(/\n+/).filter(l => l.trim()).map(line => {
-        const m = line.match(/^\s*\[(.+?)\]\s*(.*)$/);
-        if (!m) return `<div>${escapeHtml(line)}</div>`;
-        const label = m[1];
-        const color = label.startsWith('정답') ? 'text-brand-purple' : label.startsWith('팁') ? 'text-emerald-700' : 'text-brand-coral';
-        return `<div class="mt-1"><strong class="${color}">[${escapeHtml(label)}]</strong> ${escapeHtml(m[2])}</div>`;
-      }).join('');
-    }
-    function explanationTip(text) {
-      if (!text) return '';
-      const m = text.match(/\[정답\]\s*([^\n]*)/);
-      return m ? m[1] : '';
-    }
-
-    /* ==========================================================================
-       9. 렌더링
-       ========================================================================== */
-    function renderAll() {
-      const q = state.question;
-      const prompt = q ? q.prompt : '호스트가 문제를 준비하고 있어요... ⏳';
-      document.getElementById('p-question-prompt').textContent = prompt;
-      document.getElementById('board-question-prompt').textContent = prompt;
-      renderPhaseIndicators();
-      renderParticipantView();
-      if (IS_HOST) renderHostView();
-      renderBoardView();
-    }
-
-    function renderPhaseIndicators() {
-      const phase = state.question ? state.question.phase : 'draft';
-      const pill = document.getElementById('current-phase-pill');
-      pill.textContent = phase.toUpperCase();
-      const colors = { open: 'bg-yellow-200 text-yellow-900', bluff: 'bg-purple-200 text-purple-900', revealed: 'bg-emerald-200 text-emerald-900' };
-      pill.className = 'text-xs font-black uppercase px-2.5 py-0.5 rounded-full border-2 border-brand-dark ' + (colors[phase] || 'bg-gray-200 text-gray-900');
-      document.querySelectorAll('.phase-step-btn').forEach(btn => { btn.classList.remove('bg-brand-yellow'); btn.classList.add('bg-white'); });
-      const active = document.getElementById(`btn-phase-${phase}`);
-      if (active) { active.classList.remove('bg-white'); active.classList.add('bg-brand-yellow'); }
-    }
-
-    function verdictBadge(item, size = 'sm') {
-      const map = {
-        pending: ['bg-yellow-100 text-yellow-800 border-yellow-300', 'AI 판정 중...'],
-        correct: ['bg-red-100 text-red-700 border-red-300', '🎯 실수로 정답!'],
-        flagged: ['bg-gray-200 text-gray-700 border-gray-400', '⚠️ 검토 중'],
-        wrong: ['bg-emerald-50 text-emerald-700 border-emerald-300', '오답 인증']
-      };
-      const [cls, label] = map[item.verdict] || map.pending;
-      return `<span class="${cls} border ${size === 'lg' ? 'text-[11px] px-2' : 'text-[10px] px-1.5'} font-black py-0.5 rounded badge-pop">${label}</span>`;
-    }
-    const shownBody = item => item.verdict === 'flagged' ? '(호스트 검토 중인 답변)' : item.body;
-
-    /* 9.1 참가자 */
-    function renderParticipantView() {
-      const phase = state.question ? state.question.phase : 'draft';
-      const openSec = document.getElementById('p-phase-open');
-      const bluffSec = document.getElementById('p-phase-bluff');
-      const revealedSec = document.getElementById('p-phase-revealed');
-      [openSec, bluffSec, revealedSec].forEach(el => el.classList.add('hidden'));
-
-      if (phase === 'bluff') { bluffSec.classList.remove('hidden'); renderParticipantBluffChoices(); }
-      else if (phase === 'revealed' || phase === 'archived') { revealedSec.classList.remove('hidden'); renderParticipantResults(); }
-      else { openSec.classList.remove('hidden'); renderParticipantFeed(); }
-
-      const hint = document.getElementById('p-submit-hint');
-      hint.innerHTML = phase === 'open'
-        ? '<i class="ph-bold ph-info"></i> 제출 후 AI 판정관이 정답 여부와 유사도를 비동기 체크합니다.'
-        : '<i class="ph-bold ph-lock"></i> 지금은 접수가 마감되었습니다. 피드에 반응을 남겨보세요!';
-
-      const mine = enrichedAnswers().filter(a => a.deviceId === me.deviceId);
-      document.getElementById('p-my-fooled-count').textContent = mine.reduce((s, a) => s + a.fooledCount, 0);
-    }
-
-    function renderParticipantFeed() {
-      const items = enrichedAnswers();
-      const list = document.getElementById('p-feed-list');
-      document.getElementById('p-feed-count').textContent = items.length;
-      if (!items.length) { list.innerHTML = '<div class="text-xs text-gray-400 text-center py-6">아직 오답이 없어요. 첫 번째로 지어내 보세요!</div>'; return; }
-      list.innerHTML = items.map(item => {
-        const isMine = item.deviceId === me.deviceId;
-        const buttons = EMOJIS.map(e => {
-          const on = myReacted(item.id, e);
-          return `<button onclick="reactToAnswer(${item.id}, '${e}')" class="px-2 py-0.5 ${on ? 'bg-brand-yellow border-brand-dark' : 'bg-gray-50 border-gray-300 hover:bg-yellow-50'} rounded-lg border text-[11px] font-bold active:scale-95 transition">${e} ${item.reactions[e] || 0}</button>`;
-        }).join('');
-        return `
-          <div class="bg-white border-2 border-brand-dark rounded-xl p-3 shadow-brutal-sm ${isMine ? 'ring-2 ring-brand-purple' : ''}">
-            <div class="flex items-center justify-between text-xs mb-1.5">
-              <span class="font-extrabold text-gray-800 flex items-center gap-1">
-                ${escapeHtml(item.nickname)} ${isMine ? '<span class="text-[9px] bg-brand-yellow px-1 rounded text-black font-black">MY</span>' : ''}
-              </span>
-              ${verdictBadge(item)}
-            </div>
-            <div class="text-sm font-bold text-brand-dark mb-2 break-words">"${escapeHtml(shownBody(item))}"</div>
-            <div class="flex items-center gap-1.5 pt-1 border-t border-gray-100 text-xs">${buttons}</div>
-          </div>`;
-      }).join('');
-    }
-
-    function renderParticipantBluffChoices() {
-      const container = document.getElementById('p-bluff-options');
-      const vote = myVote();
-      const voted = vote ? (vote.picked_answer_id || 0) : null;
-      container.innerHTML = bluffChoices().map((choice, idx) => {
-        const isChosen = voted === choice.id;
-        return `
-          <button onclick="voteBluffChoice(${choice.id})" ${vote ? 'disabled' : ''} class="w-full text-left p-3.5 rounded-xl border-2 border-brand-dark font-extrabold text-sm transition ${isChosen ? 'bg-brand-yellow shadow-none translate-y-1' : 'bg-white hover:bg-yellow-50 shadow-brutal-sm'} flex items-center justify-between">
-            <span><span class="text-xs text-gray-400 font-mono mr-2">${idx + 1}.</span> ${escapeHtml(choice.body)}</span>
-            ${isChosen ? '<i class="ph-bold ph-check-circle text-lg text-brand-dark"></i>' : ''}
-          </button>`;
-      }).join('');
-      document.getElementById('p-bluff-voted-msg').classList.toggle('hidden', !vote);
-    }
-
-    function renderParticipantResults() {
-      const q = state.question;
-      document.getElementById('p-result-true-answer').textContent = `"${q.answer}"`;
-      const mine = enrichedAnswers().filter(a => a.deviceId === me.deviceId);
-      document.getElementById('p-stat-fooled').textContent = `${mine.reduce((s, a) => s + a.fooledCount, 0)}명`;
-      document.getElementById('p-stat-laughs').textContent = `${mine.reduce((s, a) => s + (a.reactions['😂'] || 0), 0)}개`;
-      const vote = myVote();
-      const verdictLine = vote ? (vote.picked_answer_id ? '<div class="mb-2 font-bold text-brand-coral">😵 오답에 속았어요!</div>' : '<div class="mb-2 font-bold text-emerald-700">🕵️ 정답을 찾아냈어요!</div>') : '';
-      document.getElementById('p-result-explanation').innerHTML = verdictLine + explanationHtml(q.explanation);
-    }
-
-    /* 9.2 호스트 */
-    function renderHostView() {
-      const items = enrichedAnswers();
-      document.getElementById('host-submissions-count').textContent = items.length;
-      document.getElementById('host-answers-tbody').innerHTML = items.map(item => `
-        <tr class="hover:bg-gray-50 transition">
-          <td class="p-2 font-bold text-brand-dark">${escapeHtml(item.nickname)}</td>
-          <td class="p-2 font-black text-brand-dark">${escapeHtml(item.body)}
-            ${item.misconception ? `<span class="block text-[10px] font-medium text-gray-500">${escapeHtml(item.misconception)}</span>` : ''}</td>
-          <td class="p-2">${verdictBadge(item)} ${item.host_override ? '<span class="text-[9px] text-purple-600 block">(호스트수정)</span>' : ''}</td>
-          <td class="p-2 font-mono font-bold">${item.closeness ?? '-'} / 3</td>
-          <td class="p-2 font-medium">😂 ${item.reactions['😂'] || 0} / 🎣 ${item.fooledCount}명</td>
-          <td class="p-2 text-right space-x-1 whitespace-nowrap">
-            <button onclick="overrideVerdict(${item.id}, 'correct')" class="px-2 py-1 bg-red-50 hover:bg-red-100 text-red-700 rounded border border-red-300 text-[10px] font-bold">🎯 정답 처리</button>
-            <button onclick="overrideVerdict(${item.id}, 'wrong')" class="px-2 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 rounded border border-emerald-300 text-[10px] font-bold">오답 처리</button>
-            <button onclick="overrideVerdict(${item.id}, 'flagged')" class="px-2 py-1 bg-gray-50 hover:bg-gray-100 text-gray-700 rounded border border-gray-300 text-[10px] font-bold">⚠️ 숨김</button>
-          </td>
-        </tr>`).join('');
-    }
-
-    /* 9.3 큰 화면 */
-    function renderBoardView() {
-      const phase = state.question ? state.question.phase : 'draft';
-      const feedSec = document.getElementById('board-feed-section');
-      const bluffSec = document.getElementById('board-bluff-section');
-      const revealSec = document.getElementById('board-reveal-section');
-      [feedSec, bluffSec, revealSec].forEach(el => el.classList.add('hidden'));
-      if (phase === 'bluff') { bluffSec.classList.remove('hidden'); renderBoardBluff(); }
-      else if (phase === 'revealed' || phase === 'archived') { revealSec.classList.remove('hidden'); renderBoardReveal(); }
-      else { feedSec.classList.remove('hidden'); renderBoardFeed(); }
-    }
-
-    function renderBoardFeed() {
-      const items = enrichedAnswers();
-      document.getElementById('board-feed-counter').textContent = `${items.length}개 접수`;
-      document.getElementById('board-feed-grid').innerHTML = items.map(item => `
-        <div class="bg-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <span class="font-black text-xs text-gray-500">${escapeHtml(item.nickname)}</span>
-              ${verdictBadge(item, 'lg')}
-            </div>
-            <div class="text-xl font-black text-brand-dark leading-tight break-words">"${escapeHtml(shownBody(item))}"</div>
-          </div>
-          <div class="mt-4 pt-2 border-t-2 border-gray-100 flex items-center gap-2 text-xs font-bold text-gray-700">
-            ${EMOJIS.map(e => `<span>${e} ${item.reactions[e] || 0}</span>`).join('')}
-          </div>
-        </div>`).join('');
-    }
-
-    function renderBoardBluff() {
-      document.getElementById('board-vote-count').textContent = state.votes.length;
-      // 공개 전까지는 선택지별 득표를 숨긴다
-      document.getElementById('board-bluff-grid').innerHTML = bluffChoices().map((choice, i) => `
-        <div class="bg-white border-4 border-brand-dark rounded-2xl p-6 shadow-brutal flex items-center justify-between">
-          <div class="flex items-center gap-3">
-            <span class="w-10 h-10 rounded-xl bg-brand-yellow border-2 border-brand-dark flex items-center justify-center font-black text-lg">${i + 1}</span>
-            <span class="text-2xl font-black text-brand-dark">${escapeHtml(choice.body)}</span>
-          </div>
-          <span class="text-xs font-bold text-gray-400">후보</span>
-        </div>`).join('');
-    }
-
-    function renderBoardReveal() {
-      const q = state.question;
-      const items = enrichedAnswers().filter(a => a.verdict !== 'flagged');
-      document.getElementById('board-true-answer-spotlight').textContent = `"${q.answer}"`;
-      document.getElementById('board-true-answer-tip').textContent = explanationTip(q.explanation);
-
-      const empty = { body: '없음', nickname: '-', fooledCount: 0, reactions: {} };
-      const deceiver = [...items].filter(a => a.verdict !== 'correct').sort((a, b) => b.fooledCount - a.fooledCount)[0] || empty;
-      document.getElementById('board-winner-deceiver-body').textContent = `"${deceiver.body}"`;
-      document.getElementById('board-winner-deceiver-nick').textContent = deceiver.nickname;
-      document.getElementById('board-winner-deceiver-votes').textContent = deceiver.fooledCount;
-
-      const comedy = [...items].sort((a, b) => (b.reactions['😂'] || 0) - (a.reactions['😂'] || 0))[0] || empty;
-      document.getElementById('board-winner-comedy-body').textContent = `"${comedy.body}"`;
-      document.getElementById('board-winner-comedy-nick').textContent = comedy.nickname;
-      document.getElementById('board-winner-comedy-laughs').textContent = comedy.reactions['😂'] || 0;
-
-      document.getElementById('board-explanation-box').innerHTML = explanationHtml(q.explanation);
-    }
-
-    /* 9.4 오답 위키 */
-    async function loadWiki() {
-      const grid = document.getElementById('wiki-grid');
-      const { data: qs } = await sb.from('questions').select('*').eq('room_id', ROOM)
-        .in('phase', ['revealed', 'archived']).order('id', { ascending: false }).limit(20);
-      const questions = qs || [];
-      document.getElementById('wiki-count').textContent = questions.length;
-      if (!questions.length) { grid.innerHTML = '<div class="text-xs text-gray-500">아직 결과가 공개된 라운드가 없어요.</div>'; return; }
-      const { data: scores } = await sb.from('answer_scores').select('*').in('question_id', questions.map(q => q.id));
-      grid.innerHTML = questions.map(q => {
-        const mine = (scores || []).filter(s => s.question_id === q.id);
-        const top = mine.filter(s => s.verdict === 'wrong').sort((a, b) => b.fooled - a.fooled)[0];
-        const laughs = mine.reduce((s, a) => s + Number(a.laughs || 0), 0);
-        return `
-          <div class="bg-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal flex flex-col justify-between">
-            <div>
-              <div class="flex items-center justify-between text-xs mb-2">
-                <span class="font-black bg-blue-100 text-blue-800 px-2 py-0.5 rounded border border-blue-900">정답: ${escapeHtml(q.answer)}</span>
-                <span class="text-gray-400 font-mono text-[11px]">${new Date(q.created_at).toLocaleDateString('ko-KR')}</span>
-              </div>
-              <h3 class="text-base font-black text-brand-dark">${escapeHtml(q.prompt)}</h3>
-              <p class="text-xs text-gray-600 mt-1">${escapeHtml(explanationTip(q.explanation) || '해설 없음')}</p>
-              <div class="mt-3 p-2 bg-gray-50 rounded-xl border border-gray-200">
-                <div class="text-[10px] font-bold text-gray-500 uppercase">가장 많이 낚인 오답 Top 1</div>
-                <div class="text-xs font-black text-brand-purple">${top ? `"${escapeHtml(top.body)}" (${top.fooled}명이 속음)` : '-'}</div>
-              </div>
-            </div>
-            <div class="mt-4 pt-3 border-t border-gray-200 text-xs text-gray-500">오답 ${mine.length}개 · 😂 반응 ${laughs}개</div>
-          </div>`;
-      }).join('');
-    }
+    initialize();
   </script>
 </body>
 </html>
