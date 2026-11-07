@@ -1,6 +1,7 @@
 # GL_100min — 무한의 오답 협동조합
 
-100분 해커톤(growthlog, 2026-11-07)용 프로토타입. 기획·아키텍처는 [`wrong-answer-coop-기획서.md`](./wrong-answer-coop-기획서.md).
+100분 해커톤(growthlog, 2026-11-07)용 프로토타입. 기획·아키텍처는 [`wrong-answer-coop-기획서.md`](./wrong-answer-coop-기획서.md),
+구성도·흐름 다이어그램은 [`docs/architecture.html`](./docs/architecture.html) (배포 후 `https://gl100min.vercel.app/docs/architecture.html`).
 
 > 문제를 보고 가장 그럴듯한 오답을 써라. 남들이 네 오답에 속으면 네 점수.
 
@@ -13,6 +14,7 @@ api/judge.js        POST {answer_id}            오답이 실수로 정답인지
 api/explain.js      POST {question_id}          상위 오답 3개 Gemini 해설 생성 → questions.explanation
 api/override.js     POST {answer_id, verdict}   호스트 판정 뒤집기
 supabase/schema.sql 테이블 5개 + answer_scores 뷰 + RLS + Realtime publication
+docs/architecture.html  아키텍처 다이어그램 페이지
 code_artifact.html  초기 UI 목업 (로컬 상태 버전, 참고용)
 template/           참가자 배포용 해커톤 템플릿 (Copilot 생성, 60초 클릭 게임)
 ```
