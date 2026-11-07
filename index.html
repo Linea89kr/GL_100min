@@ -605,6 +605,8 @@
       await loadState();
       subscribe();
       setInterval(tickTimer, 500);
+      // Realtime 이 꺼져 있거나 끊겨도 화면이 멈추지 않게 4초마다 다시 읽기 (30명 규모면 부담 없음)
+      setInterval(() => { if (!document.hidden) loadState(); }, 4000);
     };
 
     async function initSupabase() {
@@ -876,7 +878,7 @@
         room_id: ROOM, prompt, answer, accepted_variants: variants, phase: 'open',
         ends_at: new Date(Date.now() + ROUND_SECONDS * 1000).toISOString()
       });
-      if (error) { showToast('라운드 생성 실패: ' + error.message, '⚠️'); return; }
+      if (error) { showToast('라운드 생성 실패: ' + error.message, '⚠️'); showBanner('라운드 생성 실패: ' + error.message + ' (supabase/schema.sql 을 실행했나요?)'); return; }
       autoClosedFor = null;
       showToast('새 라운드가 시작되었습니다!', '🚀');
       await loadState();
@@ -950,7 +952,9 @@
        ========================================================================== */
     function renderAll() {
       const q = state.question;
-      const prompt = q ? q.prompt : '호스트가 문제를 준비하고 있어요... ⏳';
+      const prompt = q ? q.prompt
+        : IS_HOST ? '라운드를 만드는 중... ⏳'
+        : `아직 이 방(#${ROOM})에 라운드가 없어요. 호스트가 ?room=${ROOM}&host=1 화면을 열면 시작됩니다 ⏳`;
       document.getElementById('p-question-prompt').textContent = prompt;
       document.getElementById('board-question-prompt').textContent = prompt;
       renderPhaseIndicators();
