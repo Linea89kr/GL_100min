@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>100분 해커톤 게임 템플릿</title>
+  <style>
+    :root {
+      color-scheme: light;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: sans-serif;
+      background: linear-gradient(180deg, #f7fbff 0%, #eef4ff 100%);
+      color: #1f2a44;
+      display: flex;
+      justify-content: center;
+      padding: 20px 14px;
+    }
+
+    main {
+      width: 100%;
+      max-width: 420px;
+      background: #ffffff;
+      border: 2px solid #dbe6ff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(56, 88, 164, 0.12);
+      display: grid;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 1.6rem;
+      line-height: 1.2;
+    }
+
+    .rule {
+      margin: 0;
+      font-size: 1rem;
+      color: #33446f;
+    }
+
+    .panel {
+      border: 1px solid #d9e3ff;
+      border-radius: 12px;
+      padding: 12px;
+      background: #f8faff;
+    }
+
+    .time {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0;
+      text-align: center;
+    }
+
+    .score {
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin: 0;
+      text-align: center;
+    }
+
+    .controls,
+    .action {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      background: #315efb;
+      color: #ffffff;
+      cursor: pointer;
+      transition: transform 0.08s ease, opacity 0.2s ease;
+    }
+
+    button.secondary {
+      background: #6b7280;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    #gain-score {
+      grid-column: 1 / -1;
+      min-height: 56px;
+      font-size: 1.1rem;
+    }
+
+    @media (max-width: 360px) {
+      main {
+        padding: 16px;
+      }
+
+      h1 {
+        font-size: 1.4rem;
+      }
+
+      .time {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <!-- 여기를 바꾸세요: 게임 제목 -->
+    <h1>🎮 내 게임 제목</h1>
+    <!-- 여기를 바꾸세요: 한 문장 규칙 -->
+    <p class="rule">60초 동안 버튼을 눌러 최고 점수를 만들어보세요!</p>
+
+    <section class="panel" aria-label="타이머">
+      <p id="time-display" class="time" aria-live="polite">60</p>
+      <div class="controls">
+        <button id="start-btn" type="button">시작</button>
+        <button id="stop-btn" type="button" class="secondary">정지</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="점수판">
+      <p id="score-display" class="score">현재 점수: 0</p>
+      <p id="best-score-display" class="score">최고 점수: 0</p>
+    </section>
+
+    <section class="action" aria-label="게임 액션">
+      <!-- 여기를 바꾸세요: 참가자용 핵심 게임 버튼 (원하면 버튼/행동을 교체하세요) -->
+      <button id="gain-score" type="button">점수 +1</button>
+    </section>
+  </main>
+
+  <script>
+    // 여기를 바꾸세요: 게임 기본 설정
+    const GAME_DURATION_SECONDS = 60;
+    const BEST_SCORE_KEY = 'gl100-best-score';
+
+    let score = 0;
+    let timeLeft = GAME_DURATION_SECONDS;
+    let timerId = null;
+
+    const timeDisplay = document.getElementById('time-display');
+    const scoreDisplay = document.getElementById('score-display');
+    const bestScoreDisplay = document.getElementById('best-score-display');
+    const startButton = document.getElementById('start-btn');
+    const stopButton = document.getElementById('stop-btn');
+    const gainScoreButton = document.getElementById('gain-score');
+
+    function getBestScore() {
+      // 여기를 바꾸세요: 최고 점수 저장 키를 바꾸거나 저장 방식을 확장할 수 있습니다.
+      const savedValue = localStorage.getItem(BEST_SCORE_KEY);
+      const parsedValue = Number(savedValue);
+      return Number.isFinite(parsedValue) && parsedValue >= 0 ? parsedValue : 0;
+    }
+
+    function setBestScore(nextBestScore) {
+      localStorage.setItem(BEST_SCORE_KEY, String(nextBestScore));
+    }
+
+    function renderTime() {
+      timeDisplay.textContent = String(timeLeft);
+    }
+
+    function renderScore() {
+      scoreDisplay.textContent = `현재 점수: ${score}`;
+    }
+
+    function renderBestScore() {
+      const bestScore = getBestScore();
+      bestScoreDisplay.textContent = `최고 점수: ${bestScore}`;
+    }
+
+    function updateBestScoreIfNeeded() {
+      const bestScore = getBestScore();
+      if (score > bestScore) {
+        setBestScore(score);
+        renderBestScore();
+      }
+    }
+
+    function setPlayingState(isPlaying) {
+      startButton.disabled = isPlaying;
+      gainScoreButton.disabled = !isPlaying;
+    }
+
+    function stopGame() {
+      if (timerId !== null) {
+        clearInterval(timerId);
+        timerId = null;
+      }
+      updateBestScoreIfNeeded();
+      setPlayingState(false);
+    }
+
+    function handleTimerTick() {
+      timeLeft -= 1;
+      renderTime();
+
+      if (timeLeft <= 0) {
+        stopGame();
+      }
+    }
+
+    function startGame() {
+      stopGame();
+      score = 0;
+      timeLeft = GAME_DURATION_SECONDS;
+      renderScore();
+      renderTime();
+      setPlayingState(true);
+
+      timerId = window.setInterval(handleTimerTick, 1000);
+    }
+
+    function stopGameByUser() {
+      stopGame();
+    }
+
+    function increaseScore() {
+      // 여기를 바꾸세요: 점수 계산 규칙, 콤보, 아이템 로직 등을 자유롭게 바꾸세요.
+      if (timerId === null) {
+        return;
+      }
+      score += 1;
+      renderScore();
+    }
+
+    function bindEvents() {
+      startButton.addEventListener('click', startGame);
+      stopButton.addEventListener('click', stopGameByUser);
+      gainScoreButton.addEventListener('click', increaseScore);
+    }
+
+    function initialize() {
+      renderTime();
+      renderScore();
+      renderBestScore();
+      setPlayingState(false);
+      bindEvents();
+    }
+
+    initialize();
+  </script>
+</body>
+</html>
