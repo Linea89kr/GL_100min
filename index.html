@@ -294,7 +294,7 @@
             <h3 class="text-xs font-black text-brand-dark flex items-center gap-1">
               <i class="ph-bold ph-pencil-simple"></i> 출제 문제 설정
             </h3>
-            <span class="text-[11px] text-gray-400">저장 시 새 라운드(OPEN)가 열립니다</span>
+            <span class="text-[11px] text-gray-400">진행 중 라운드: <strong id="host-current-answer" class="text-brand-purple">-</strong></span>
           </div>
 
           <div>
@@ -313,11 +313,15 @@
             </div>
           </div>
 
-          <div class="flex justify-end pt-1">
+          <div class="flex flex-wrap justify-end gap-2 pt-1">
+            <button onclick="updateCurrentRound()" class="px-3 py-1.5 bg-brand-yellow text-brand-dark border-2 border-brand-dark text-xs font-black rounded-lg hover:bg-yellow-300">
+              현재 라운드 수정 (제출 유지 + 재판정)
+            </button>
             <button onclick="newRoundFromInputs()" class="px-3 py-1.5 bg-brand-dark text-white text-xs font-black rounded-lg hover:bg-gray-800">
               이 문제로 새 라운드 시작
             </button>
           </div>
+          <p class="text-[10px] text-gray-400 text-right">입력칸은 진행 중인 라운드 값으로 채워집니다. 수정은 받은 오답을 그대로 두고, 새 라운드는 처음부터 다시 받습니다.</p>
         </div>
 
         <!-- Quick Presets -->
@@ -336,7 +340,20 @@
               </button>
             </div>
           </div>
-          <p class="text-[10px] text-gray-400 mt-2">클릭하면 입력칸이 채워집니다. "새 라운드 시작"으로 반영하세요.</p>
+          <p class="text-[10px] text-gray-400 mt-2">클릭하면 입력칸만 채워집니다. 아래 버튼 중 하나로 반영하세요.</p>
+        </div>
+      </div>
+
+      <!-- Manual Explanation (LLM 이 실패해도 진행할 수 있게) -->
+      <div class="bg-white border-3 border-brand-dark rounded-2xl p-4 shadow-brutal space-y-2">
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-xs font-black text-brand-dark flex items-center gap-1"><i class="ph-bold ph-note-pencil"></i> 해설 (직접 입력 / AI 결과 수정)</h3>
+          <span class="text-[11px] text-gray-400">형식 예: [정답] … / [오답1] … / [팁] …</span>
+        </div>
+        <textarea id="host-explanation-input" rows="4" class="w-full text-xs font-medium border-2 border-brand-dark rounded-lg p-2 focus:ring-2 focus:ring-brand-yellow" placeholder="[정답] NaN 은 IEEE 754 의 특수한 숫자값이라 typeof 결과는 number 입니다.&#10;[오답1] undefined: 값이 없다는 뜻과 '숫자가 아님'을 혼동했어요.&#10;[팁] NaN 은 '숫자 타입의 실패한 값'."></textarea>
+        <div class="flex justify-end gap-2">
+          <button onclick="requestExplanation()" class="px-3 py-1.5 bg-white border-2 border-brand-dark text-xs font-black rounded-lg hover:bg-gray-50">AI로 다시 생성</button>
+          <button onclick="saveExplanation()" class="px-3 py-1.5 bg-brand-dark text-white text-xs font-black rounded-lg hover:bg-gray-800">해설 저장</button>
         </div>
       </div>
 
@@ -349,7 +366,10 @@
             </h3>
             <p class="text-[11px] text-gray-500">LLM 오판 시 호스트가 🎯 실수로 정답 또는 오답으로 강제 수정할 수 있습니다.</p>
           </div>
-          <span class="text-xs font-bold text-gray-500">총 <span id="host-submissions-count">0</span>건</span>
+          <div class="flex items-center gap-2">
+            <button onclick="rejudgePending()" class="px-2 py-1 bg-white border-2 border-brand-dark rounded-lg text-[11px] font-black hover:bg-yellow-50">판정 대기 재시도</button>
+            <span class="text-xs font-bold text-gray-500">총 <span id="host-submissions-count">0</span>건</span>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -584,6 +604,8 @@
     /* ==========================================================================
        2. 초기화
        ========================================================================== */
+    document.addEventListener('input', e => { if (e.target && e.target.id === 'host-explanation-input') e.target.dataset.dirty = '1'; });
+
     window.onload = async function () {
       ['p-room-code'].forEach(id => document.getElementById(id).textContent = '#' + ROOM);
       document.getElementById('host-room-code').textContent = ROOM;
@@ -687,6 +709,7 @@
 
     function onStateChanged() {
       const q = state.question;
+      if (IS_HOST) syncHostForm(q);
       if (q && (q.id !== lastQuestionId || q.phase !== lastPhase)) {
         if (lastPhase !== null) showToast(`라운드 상태: [${q.phase.toUpperCase()}]`);
         if (q.phase === 'revealed' && lastPhase && lastPhase !== 'revealed') triggerVictoryEffects();
@@ -834,9 +857,9 @@
       showToast('AI 해설을 생성하는 중...', '💡');
       try {
         const r = await api('/api/explain', { question_id: state.question.id });
-        if (!r.explanation) showToast(r.error || '해설을 만들지 못했어요', '⚠️');
+        if (!r.explanation) showToast((r.error || '해설을 만들지 못했어요') + ' — 해설 칸에 직접 입력할 수 있어요.', '⚠️');
       } catch (e) {
-        showToast('해설 실패: ' + e.message, '⚠️');
+        showToast('AI 해설 실패: ' + e.message + ' — 해설 칸에 직접 입력할 수 있어요.', '⚠️');
       }
     }
 
@@ -868,14 +891,73 @@
       } catch (e) { showToast('뒤집기 실패: ' + e.message, '⚠️'); }
     }
 
+    // 호스트 입력칸을 "진행 중인 라운드" 값으로 맞춘다 (라운드가 바뀔 때만 — 입력 중인 값은 덮지 않음)
+    let hostFormFor = null;
+    function syncHostForm(q) {
+      if (!q) return;
+      const ta = document.getElementById('host-explanation-input');
+      if (hostFormFor !== q.id) {
+        hostFormFor = q.id;
+        delete ta.dataset.dirty;
+        ta.value = q.explanation || '';
+        document.getElementById('host-prompt-input').value = q.prompt;
+        document.getElementById('host-answer-input').value = q.answer;
+        document.getElementById('host-variants-input').value = (q.accepted_variants || []).join(', ');
+      }
+      else if (document.activeElement !== ta && !ta.dataset.dirty) ta.value = q.explanation || '';
+    }
+
+    function readHostForm() {
+      return {
+        prompt: document.getElementById('host-prompt-input').value.trim(),
+        answer: document.getElementById('host-answer-input').value.trim(),
+        accepted_variants: document.getElementById('host-variants-input').value.split(',').map(s => s.trim()).filter(Boolean)
+      };
+    }
+
+    // 진행 중인 라운드의 문제/정답만 고치고, 받은 오답은 유지한 채 다시 판정
+    async function updateCurrentRound() {
+      if (!IS_HOST || !state.question) return;
+      const f = readHostForm();
+      if (!f.prompt || !f.answer) { showToast('문제와 정답을 모두 입력하세요.', '⚠️'); return; }
+      const { error } = await sb.from('questions').update(f).eq('id', state.question.id);
+      if (error) { showToast('라운드 수정 실패: ' + error.message, '⚠️'); return; }
+      Object.assign(state.question, f);
+      renderAll();
+      const targets = state.answers.filter(a => !a.host_override);
+      showToast(`정답을 '${f.answer}'(으)로 수정했어요. 오답 ${targets.length}개를 다시 판정합니다.`, '✏️');
+      await Promise.all(targets.map(a => api('/api/judge', { answer_id: a.id, force: true }).catch(() => {})));
+      scheduleRefresh();
+    }
+
+    async function rejudgePending() {
+      const pending = state.answers.filter(a => a.verdict === 'pending');
+      if (!pending.length) { showToast('판정 대기 중인 오답이 없어요.'); return; }
+      showToast(`${pending.length}개 재판정 중...`, '🔁');
+      const results = await Promise.allSettled(pending.map(a => api('/api/judge', { answer_id: a.id })));
+      const failed = results.filter(r => r.status === 'rejected');
+      if (failed.length) showToast(`${failed.length}개 실패: ${failed[0].reason.message} — 수동 판정 버튼을 쓰세요.`, '⚠️');
+      scheduleRefresh();
+    }
+
+    async function saveExplanation() {
+      if (!IS_HOST || !state.question) return;
+      const ta = document.getElementById('host-explanation-input');
+      const explanation = ta.value.trim() || null;
+      const { error } = await sb.from('questions').update({ explanation }).eq('id', state.question.id);
+      if (error) { showToast('해설 저장 실패: ' + error.message, '⚠️'); return; }
+      delete ta.dataset.dirty;
+      state.question.explanation = explanation;
+      renderAll();
+      showToast('해설을 저장했어요. 모든 화면에 반영됩니다.', '💡');
+    }
+
     async function newRoundFromInputs() {
       if (!IS_HOST) return;
-      const prompt = document.getElementById('host-prompt-input').value.trim();
-      const answer = document.getElementById('host-answer-input').value.trim();
-      const variants = document.getElementById('host-variants-input').value.split(',').map(s => s.trim()).filter(Boolean);
+      const { prompt, answer, accepted_variants } = readHostForm();
       if (!prompt || !answer) { showToast('문제와 정답을 모두 입력하세요.', '⚠️'); return; }
       const { error } = await sb.from('questions').insert({
-        room_id: ROOM, prompt, answer, accepted_variants: variants, phase: 'open',
+        room_id: ROOM, prompt, answer, accepted_variants, phase: 'open',
         ends_at: new Date(Date.now() + ROUND_SECONDS * 1000).toISOString()
       });
       if (error) { showToast('라운드 생성 실패: ' + error.message, '⚠️'); showBanner('라운드 생성 실패: ' + error.message + ' (supabase/schema.sql 을 실행했나요?)'); return; }
@@ -932,7 +1014,7 @@
 
     // 해설 텍스트 → HTML ([정답] / [오답N] / [팁] 라벨 강조)
     function explanationHtml(text) {
-      if (!text) return '<div class="text-gray-500">💡 AI 해설을 생성하는 중입니다...</div>';
+      if (!text) return '<div class="text-gray-500">💡 해설을 준비하는 중입니다. 정답을 먼저 확인해 보세요!</div>';
       return text.split(/\n+/).filter(l => l.trim()).map(line => {
         const m = line.match(/^\s*\[(.+?)\]\s*(.*)$/);
         if (!m) return `<div>${escapeHtml(line)}</div>`;
@@ -1060,6 +1142,8 @@
 
     /* 9.2 호스트 */
     function renderHostView() {
+      const q = state.question;
+      document.getElementById('host-current-answer').textContent = q ? `정답 "${q.answer}" · ${q.phase.toUpperCase()}` : '없음';
       const items = enrichedAnswers();
       document.getElementById('host-submissions-count').textContent = items.length;
       document.getElementById('host-answers-tbody').innerHTML = items.map(item => `
