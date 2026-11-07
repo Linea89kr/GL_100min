@@ -4,7 +4,6 @@
   "type": "module",
   "description": "무한의 오답 협동조합 — 단일 HTML + Supabase + Vercel Functions",
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.6.0",
     "@supabase/supabase-js": "^2.119.0"
   }
 }

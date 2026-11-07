@@ -1,18 +1,19 @@
 // POST /api/judge { answer_id }
 // 제출된 "오답"이 사실 정답(또는 동치)인지 판정해 answers 행을 갱신한다.
 // 클라이언트가 보낸 내용은 믿지 않고, answer_id 로 DB 에서 직접 읽는다.
-import { admin, claude, textOf, readBody, onlyPost, normalize } from "./_lib.js";
+import { admin, gemini, hasLLM, MODELS, readBody, onlyPost, normalize } from "./_lib.js";
 
+// Gemini responseSchema (OpenAPI 부분집합)
 const SCHEMA = {
-  type: "object",
+  type: "OBJECT",
   properties: {
-    is_correct: { type: "boolean" },
-    closeness: { type: "integer", enum: [0, 1, 2, 3] },
-    misconception: { type: "string" },
-    flag: { type: "boolean" },
+    is_correct: { type: "BOOLEAN" },
+    closeness: { type: "INTEGER", description: "0~3" },
+    misconception: { type: "STRING" },
+    flag: { type: "BOOLEAN" },
   },
   required: ["is_correct", "closeness", "misconception", "flag"],
-  additionalProperties: false,
+  propertyOrdering: ["is_correct", "closeness", "misconception", "flag"],
 };
 
 const SYSTEM = `당신은 퀴즈 게임 "무한의 오답 협동조합"의 판정관입니다.
@@ -45,33 +46,27 @@ export default async function handler(req, res) {
   // 1) 정답/동치 표현과 글자 그대로 같으면 LLM 없이 바로 🎯
   if (variants.some((v) => normalize(v) && normalize(v) === normalize(ans.body))) {
     result = { is_correct: true, closeness: 3, misconception: "", flag: false };
-  } else if (!process.env.ANTHROPIC_API_KEY) {
+  } else if (!hasLLM()) {
     // 2) LLM 키가 없으면 오답으로 처리 (호스트가 뒤집기 가능)
     result = { is_correct: false, closeness: 1, misconception: "", flag: false };
   } else {
     // 3) 소형·고속 모델로 판정
     try {
-      const response = await claude().messages.create({
-        model: "claude-haiku-5-5",
-        max_tokens: 1024,
+      const { text, blocked } = await gemini({
+        model: MODELS.judge,
         system: SYSTEM,
-        output_config: { effort: "low", format: { type: "json_schema", schema: SCHEMA } },
-        messages: [{
-          role: "user",
-          content:
-            `문제: ${q.prompt}\n정답: ${q.answer}\n허용 동치 표현: ${(q.accepted_variants || []).join(", ") || "(없음)"}\n` +
-            `제출: ${ans.body}`,
-        }],
+        schema: SCHEMA,
+        user:
+          `문제: ${q.prompt}\n정답: ${q.answer}\n허용 동치 표현: ${(q.accepted_variants || []).join(", ") || "(없음)"}\n` +
+          `제출: ${ans.body}`,
       });
-      if (response.stop_reason === "refusal") {
-        result = { is_correct: false, closeness: 0, misconception: "", flag: true };
-      } else {
-        result = JSON.parse(textOf(response));
-      }
+      result = blocked
+        ? { is_correct: false, closeness: 0, misconception: "", flag: true } // 안전 필터 → 호스트 검토
+        : JSON.parse(text);
     } catch (e) {
       console.error("judge LLM error", e);
       // 장애 시 폴백: pending 으로 남겨두고 호스트가 수동 판정
-      return res.status(502).json({ error: "LLM 판정 실패, 호스트 수동 판정 필요" });
+      return res.status(502).json({ error: "LLM 판정 실패, 호스트 수동 판정 필요: " + e.message });
     }
   }
 
