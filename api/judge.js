@@ -27,7 +27,8 @@ const SYSTEM = `당신은 퀴즈 게임 "무한의 오답 협동조합"의 판�
 
 export default async function handler(req, res) {
   if (!onlyPost(req, res)) return;
-  const { answer_id } = readBody(req);
+  // force: 호스트가 정답을 수정한 뒤 재판정할 때 (호스트가 직접 뒤집은 답은 건드리지 않음)
+  const { answer_id, force } = readBody(req);
   if (!answer_id) return res.status(400).json({ error: "answer_id 필요" });
 
   const db = admin();
@@ -37,7 +38,7 @@ export default async function handler(req, res) {
     .eq("id", answer_id)
     .single();
   if (error || !ans) return res.status(404).json({ error: "answer 없음" });
-  if (ans.host_override || ans.verdict !== "pending") return res.status(200).json({ skipped: true });
+  if (ans.host_override || (!force && ans.verdict !== "pending")) return res.status(200).json({ skipped: true });
 
   const q = ans.question;
   const variants = [q.answer, ...(q.accepted_variants || [])];
@@ -65,6 +66,8 @@ export default async function handler(req, res) {
         : JSON.parse(text);
     } catch (e) {
       console.error("judge LLM error", e);
+      // 재판정 중 실패하면 예전 정답 기준 판정이 남지 않도록 대기로 되돌린다
+      if (force) await db.from("answers").update({ verdict: "pending" }).eq("id", answer_id).eq("host_override", false);
       // 장애 시 폴백: pending 으로 남겨두고 호스트가 수동 판정
       return res.status(502).json({ error: "LLM 판정 실패, 호스트 수동 판정 필요: " + e.message });
     }
