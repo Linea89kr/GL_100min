@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>오답 협동조합 아키텍처</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: 한 열 문서. 구성도 → 레포 지도 → 흐름 → 데이터 → 설정 순으로 위에서 아래로 읽힌다. */
+  :root {
+    --bg: #f7f6f1;
+    --surface: #ffffff;
+    --ink: #1c1b22;
+    --muted: #5f5c6b;
+    --line: #dcd9e4;
+    --accent: #6a2fb3;      /* 게임의 보라 */
+    --mark: #ffd84d;        /* 게임의 노랑, 형광펜 */
+    --mark-ink: #1c1b22;
+    --client: #e9e3f6;
+    --edge: #e6f3ef;
+    --data: #fff4cc;
+    --ext: #fde8ec;
+    --font-display: "Do Hyeon", "IBM Plex Sans KR", system-ui, sans-serif;
+    --font-body: "IBM Plex Sans KR", -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+    --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #16151b; --surface: #1f1e26; --ink: #ecebf2; --muted: #a6a3b5; --line: #34323f;
+      --accent: #b791f0; --mark: #f2cc3d; --mark-ink: #16151b;
+      --client: #2c2540; --edge: #1d3330; --data: #3a3218; --ext: #3d2229;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #16151b; --surface: #1f1e26; --ink: #ecebf2; --muted: #a6a3b5; --line: #34323f;
+    --accent: #b791f0; --mark: #f2cc3d; --mark-ink: #16151b;
+    --client: #2c2540; --edge: #1d3330; --data: #3a3218; --ext: #3d2229;
+    color-scheme: dark;
+  }
+
+  body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.65; }
+  .wrap {
+    max-width: 980px; margin: 0 auto;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 40px 72px;
+    display: grid; gap: 56px;
+  }
+  header { display: grid; gap: 10px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-family: var(--font-display); font-weight: 400; font-size: clamp(34px, 6vw, 52px); line-height: 1.1; margin: 0; text-wrap: balance; }
+  h1 mark, h2 mark { background: linear-gradient(transparent 55%, var(--mark) 55%); color: inherit; padding: 0 2px; }
+  .lede { max-width: 64ch; color: var(--muted); margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .chip { font-family: var(--font-mono); font-size: 12px; padding: 3px 9px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); }
+
+  section { display: grid; gap: 16px; }
+  h2 { font-family: var(--font-display); font-weight: 400; font-size: 28px; margin: 0; line-height: 1.2; }
+  .sub { color: var(--muted); margin: 0; max-width: 68ch; }
+  code, .mono { font-family: var(--font-mono); font-size: .9em; }
+  p code, li code, td code { background: var(--surface); border: 1px solid var(--line); padding: 0 5px; border-radius: 4px; }
+
+  .panel { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 20px; min-width: 0; }
+  .scroll { overflow-x: auto; }
+  pre.mermaid { margin: 0; background: transparent; text-align: center; }
+
+  /* 레포 지도 */
+  .tree { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .tree li { display: grid; grid-template-columns: minmax(170px, 230px) 1fr; gap: 16px; padding: 9px 4px; border-bottom: 1px dashed var(--line); align-items: baseline; }
+  .tree li:last-child { border-bottom: 0; }
+  .tree .path { font-family: var(--font-mono); font-size: 13.5px; font-weight: 500; overflow-wrap: anywhere; }
+  .tree .indent { padding-left: 18px; }
+  .tree .role { color: var(--ink); min-width: 0; }
+  .tree .role small { display: block; color: var(--muted); font-size: 13px; }
+  .tag { display: inline-block; font-family: var(--font-mono); font-size: 11px; padding: 1px 7px; border-radius: 4px; margin-right: 6px; vertical-align: 1px; color: var(--ink); }
+  .t-client { background: var(--client); } .t-edge { background: var(--edge); } .t-data { background: var(--data); } .t-doc { background: var(--line); }
+  @media (max-width: 560px) { .tree li { grid-template-columns: 1fr; gap: 2px; } }
+
+  /* 테이블 카드 */
+  .tables { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+  .tbl { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: grid; gap: 8px; align-content: start; min-width: 0; }
+  .tbl h3 { margin: 0; font-family: var(--font-mono); font-size: 15px; font-weight: 500; display: flex; justify-content: space-between; gap: 8px; }
+  .tbl h3 span { font-family: var(--font-body); font-size: 12px; color: var(--muted); font-weight: 400; }
+  .cols { margin: 0; padding: 0; list-style: none; font-family: var(--font-mono); font-size: 12.5px; display: grid; gap: 3px; }
+  .cols li { overflow-wrap: anywhere; }
+  .cols .k { color: var(--accent); }
+  .cols .new::after { content: " 추가"; font-family: var(--font-body); font-size: 11px; background: var(--mark); color: var(--mark-ink); padding: 0 5px; border-radius: 3px; margin-left: 4px; }
+  .rls { font-size: 12.5px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
+
+  /* 표 */
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; font-family: var(--font-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--muted); font-weight: 500; }
+  tr:last-child td { border-bottom: 0; }
+
+  .two { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  ul.plain { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+  .legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid var(--line); }
+  footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 16px; }
+  a { color: var(--accent); }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+</head>
+<body style="margin:0">
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Linea89kr/GL_100min · main 기준 · 2026-11-07</div>
+    <h1>무한의 <mark>오답</mark> 협동조합 아키텍처</h1>
+    <p class="lede">단일 HTML 한 장이 Supabase에 직접 붙고, 키가 필요한 일(LLM 판정·해설, 판정 뒤집기)만 Vercel 서버리스 함수가 맡는 구조입니다. 기획서 ADR-001의 Option A를 그대로 구현했습니다.</p>
+    <div class="chips">
+      <span class="chip">index.html · 바닐라 JS</span>
+      <span class="chip">Supabase · Postgres + Realtime</span>
+      <span class="chip">Vercel Functions × 4</span>
+      <span class="chip">Gemini 2.5 Flash / Flash-Lite</span>
+    </div>
+  </header>
+
+  <section aria-labelledby="s-system">
+    <h2 id="s-system">시스템 구성도</h2>
+    <p class="sub">브라우저는 anon key로 DB를 직접 읽고 씁니다. 판정 결과 쓰기처럼 권한이 필요한 작업은 <code>service_role</code> key를 가진 함수만 할 수 있고, RLS가 그 경계를 지킵니다.</p>
+    <div class="panel scroll">
+<pre class="mermaid">
+flowchart LR
+  subgraph C["브라우저 · index.html 한 파일"]
+    P["참가자<br/>?room=ABC1"]
+    H["호스트<br/>?room=ABC1&amp;host=1"]
+    B["큰 화면<br/>?room=ABC1&amp;board=1"]
+  end
+  subgraph V["Vercel"]
+    S["정적 호스팅<br/>index.html"]
+    CFG["/api/config"]
+    J["/api/judge"]
+    E["/api/explain"]
+    O["/api/override"]
+  end
+  subgraph SB["Supabase"]
+    DB[("Postgres<br/>rooms · questions · answers<br/>reactions · votes")]
+    RT(["Realtime<br/>postgres_changes"])
+  end
+  G["Google Gemini API"]
+
+  S -. 페이지 로드 .-> C
+  C -- "URL + anon key 받기" --> CFG
+  C -- "anon key: 제출 · 반응 · 투표 · phase 전환" --> DB
+  DB --> RT
+  RT -- "변경 알림 → 다시 읽기" --> C
+  P -- "answer_id" --> J
+  H -- "question_id" --> E
+  H -- "answer_id, verdict" --> O
+  J --> G
+  E --> G
+  J -- "service_role: verdict 갱신" --> DB
+  E -- "service_role: explanation 저장" --> DB
+  O -- "service_role: 판정 뒤집기" --> DB
+</pre>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-repo">
+    <h2 id="s-repo">레포 지도</h2>
+    <div class="legend">
+      <span><i style="background:var(--client)"></i>브라우저에서 실행</span>
+      <span><i style="background:var(--edge)"></i>Vercel 서버리스</span>
+      <span><i style="background:var(--data)"></i>DB</span>
+      <span><i style="background:var(--line)"></i>문서·참고</span>
+    </div>
+    <div class="panel">
+      <ul class="tree">
+        <li><span class="path">index.html</span><span class="role"><span class="tag t-client">client</span>게임 본체. 참가자·호스트·큰 화면·위키 4개 뷰를 URL 파라미터로 나눔<small>Supabase JS(CDN)로 직접 조회·삽입, Realtime 구독, 판정·해설은 /api 호출. 상단 상수 SUPABASE_URL / SUPABASE_ANON_KEY</small></span></li>
+        <li><span class="path">api/</span><span class="role"><span class="tag t-edge">edge</span>Vercel이 파일마다 서버리스 함수로 배포</span></li>
+        <li><span class="path indent">_lib.js</span><span class="role">공용 유틸. 이름이 _로 시작해 라우트로 노출되지 않음<small>환경변수 별칭 처리(pickEnv), service_role 클라이언트(admin), gemini() REST 호출, 모델 설정</small></span></li>
+        <li><span class="path indent">config.js</span><span class="role"><code>GET</code> 브라우저에 URL·anon key 전달<small>found 필드로 어떤 변수 이름을 찾았는지 진단(값은 노출 안 함)</small></span></li>
+        <li><span class="path indent">judge.js</span><span class="role"><code>POST {answer_id}</code> 실수로 정답인지 판정 → verdict, closeness, misconception<small>정답·동치 표현과 글자가 같으면 LLM 없이 🎯. 아니면 gemini-2.5-flash-lite + JSON 스키마</small></span></li>
+        <li><span class="path indent">explain.js</span><span class="role"><code>POST {question_id}</code> 가장 많이 속인 오답 3개로 해설 → questions.explanation<small>gemini-2.5-flash. [정답] / [오답N] / [팁] 형식</small></span></li>
+        <li><span class="path indent">override.js</span><span class="role"><code>POST {answer_id, verdict}</code> 호스트의 판정 뒤집기<small>answers는 anon update 금지라 서버에서 처리</small></span></li>
+        <li><span class="path">supabase/schema.sql</span><span class="role"><span class="tag t-data">db</span>테이블 5개 + answer_scores 뷰 + RLS + Realtime publication<small>SQL Editor에 붙여넣고 Run. 여러 번 실행해도 안전</small></span></li>
+        <li><span class="path">package.json</span><span class="role"><span class="tag t-edge">edge</span>서버리스 의존성: @supabase/supabase-js 하나</span></li>
+        <li><span class="path">.env.example</span><span class="role"><span class="tag t-doc">doc</span>Vercel에 넣을 환경변수 목록(값 없음)</span></li>
+        <li><span class="path">code_artifact.html</span><span class="role"><span class="tag t-doc">doc</span>초기 UI 목업. 로컬 상태로만 동작하는 참고본</span></li>
+        <li><span class="path">template/</span><span class="role"><span class="tag t-doc">doc</span>참가자 배포용 해커톤 템플릿(Copilot 생성, 60초 클릭 게임)</span></li>
+        <li><span class="path">wrong-answer-coop-기획서.md</span><span class="role"><span class="tag t-doc">doc</span>기획 · ADR · 스키마 원본</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-flow">
+    <h2 id="s-flow">오답 하나가 지나가는 길</h2>
+    <p class="sub">제출은 즉시 화면에 뜨고, 판정은 뒤에서 2~3초 걸려 도착합니다. 판정을 기다렸다가 보여주면 분위기가 식기 때문에 비동기로 나눴습니다.</p>
+    <div class="panel scroll">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  participant P as 참가자 폰
+  participant DB as Supabase
+  participant RT as Realtime
+  participant J as /api/judge
+  participant G as Gemini
+  participant BD as 큰 화면·다른 폰
+  P->>DB: answers insert (verdict = pending)
+  Note over DB: RLS: phase = open 인 문제에만 허용
+  DB-->>RT: INSERT 이벤트
+  RT-->>BD: 카드 추가 "AI 판정 중..."
+  P->>J: POST { answer_id }
+  J->>DB: 답·문제·정답 읽기 (service_role)
+  alt 정답/동치 표현과 글자가 같음
+    J->>J: 바로 correct
+  else 그 외
+    J->>G: generateContent (JSON 스키마)
+    G-->>J: is_correct, closeness, misconception, flag
+  end
+  J->>DB: verdict 갱신 (호스트가 이미 뒤집었으면 건너뜀)
+  DB-->>RT: UPDATE 이벤트
+  RT-->>BD: 배지 변경 ✅ 오답 인증 / 🎯 실수로 정답 / ⚠️ 검토 중
+</pre>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-phase">
+    <h2 id="s-phase">라운드 단계</h2>
+    <p class="sub">모든 화면은 <code>questions.phase</code> 한 컬럼만 봅니다. 호스트가 이 값을 바꾸면 Realtime으로 참가자와 큰 화면이 함께 넘어갑니다.</p>
+    <div class="two">
+      <div class="panel scroll">
+<pre class="mermaid">
+stateDiagram-v2
+  direction LR
+  [*] --> open: 새 라운드
+  open --> closed: 마감 / 60초 종료
+  closed --> bluff: 블러프 시작
+  bluff --> revealed: 결과 공개
+  revealed --> [*]: 위키에 남음
+</pre>
+      </div>
+      <div class="panel">
+        <table>
+          <thead><tr><th>phase</th><th>DB에 일어나는 일</th></tr></thead>
+          <tbody>
+            <tr><td><code>open</code></td><td><code>ends_at</code> = 지금 + 60초. answers insert 허용</td></tr>
+            <tr><td><code>closed</code></td><td>제출 차단. 호스트가 판정 검토</td></tr>
+            <tr><td><code>bluff</code></td><td>정답(0) + 그럴듯한 오답 3개를 섞어 <code>bluff_answer_ids</code>에 저장. votes insert 허용</td></tr>
+            <tr><td><code>revealed</code></td><td>/api/explain 호출 → <code>explanation</code> 저장. 두 트랙 시상</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-data">
+    <h2 id="s-data">데이터 모델과 권한</h2>
+    <p class="sub">anon key는 공개돼도 되는 키라 레포나 브라우저에 있어도 괜찮습니다. 대신 각 테이블의 RLS가 "누가 무엇을 쓸 수 있는지"를 정합니다.</p>
+    <div class="tables">
+      <div class="tbl">
+        <h3>rooms <span>방</span></h3>
+        <ul class="cols"><li><span class="k">id</span> text PK · 'ABC1'</li><li>name</li></ul>
+        <div class="rls">anon: 읽기 · 생성</div>
+      </div>
+      <div class="tbl">
+        <h3>questions <span>라운드</span></h3>
+        <ul class="cols">
+          <li><span class="k">id</span> · room_id → rooms</li>
+          <li>prompt · answer · accepted_variants[]</li>
+          <li>phase · explanation</li>
+          <li class="new">bluff_answer_ids bigint[]</li>
+          <li class="new">ends_at timestamptz</li>
+        </ul>
+        <div class="rls">anon: 읽기 · 생성 · 수정 (MVP, room 코드가 사실상 비밀)</div>
+      </div>
+      <div class="tbl">
+        <h3>answers <span>오답</span></h3>
+        <ul class="cols">
+          <li><span class="k">id</span> · question_id → questions</li>
+          <li>device_id · nickname · body</li>
+          <li>verdict · closeness · misconception</li>
+          <li>host_override</li>
+        </ul>
+        <div class="rls">anon: 읽기, open 단계에서 pending으로만 생성. 수정은 service_role만</div>
+      </div>
+      <div class="tbl">
+        <h3>reactions <span>이모지</span></h3>
+        <ul class="cols"><li><span class="k">PK</span> (answer_id, device_id, emoji)</li><li>emoji ∈ 😂 🤔 💀 📚</li></ul>
+        <div class="rls">anon: 읽기 · 생성. PK로 같은 반응 중복 방지</div>
+      </div>
+      <div class="tbl">
+        <h3>votes <span>블러프 투표</span></h3>
+        <ul class="cols"><li><span class="k">PK</span> (question_id, device_id)</li><li>picked_answer_id · null이면 진짜 정답 선택</li></ul>
+        <div class="rls">anon: 읽기, bluff 단계에서만 생성. 1인 1표</div>
+      </div>
+      <div class="tbl">
+        <h3>answer_scores <span>뷰</span></h3>
+        <ul class="cols"><li>answers + laughs · reactions · fooled</li></ul>
+        <div class="rls">해설 생성(상위 오답 3개)과 위키 카드에 사용</div>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-env">
+    <h2 id="s-env">환경변수</h2>
+    <p class="sub">Vercel → Settings → Environment Variables에 넣고 Redeploy해야 적용됩니다. <code>/api/config</code>를 열면 어떤 이름을 찾았는지 확인할 수 있습니다.</p>
+    <div class="panel scroll">
+      <table>
+        <thead><tr><th>이름</th><th>읽는 곳</th><th>공개 여부</th><th>함께 인식하는 이름</th></tr></thead>
+        <tbody>
+          <tr><td><code>SUPABASE_URL</code></td><td>config, 모든 함수</td><td>공개</td><td class="mono">NEXT_PUBLIC_SUPABASE_URL</td></tr>
+          <tr><td><code>SUPABASE_ANON_KEY</code></td><td>config → 브라우저</td><td>공개 (RLS가 방어)</td><td class="mono">NEXT_PUBLIC_SUPABASE_ANON_KEY, SUPABASE_PUBLISHABLE_KEY</td></tr>
+          <tr><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>judge, explain, override</td><td>비공개. 서버에만</td><td class="mono">SUPABASE_SECRET_KEY</td></tr>
+          <tr><td><code>GEMINI_API_KEY</code></td><td>judge, explain</td><td>비공개. 서버에만</td><td class="mono">GOOGLE_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY</td></tr>
+          <tr><td><code>GEMINI_MODEL_JUDGE</code></td><td>judge</td><td>선택</td><td class="mono">기본 gemini-2.5-flash-lite</td></tr>
+          <tr><td><code>GEMINI_MODEL_EXPLAIN</code></td><td>explain</td><td>선택</td><td class="mono">기본 gemini-2.5-flash</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="s-limits">
+    <h2 id="s-limits">알려진 한계와 다음 단계</h2>
+    <div class="two">
+      <div class="panel">
+        <ul class="plain">
+          <li><strong>호스트 인증 없음.</strong> <code>&amp;host=1</code>만 붙이면 누구나 호스트입니다.</li>
+          <li><strong>정답이 읽힘.</strong> <code>questions.answer</code>를 anon이 읽을 수 있어 개발자도구로 볼 수 있습니다.</li>
+          <li><strong>LLM 장애 시</strong> 카드가 "AI 판정 중"에 머뭅니다. 호스트가 직접 판정해야 합니다.</li>
+          <li><strong>Realtime이 꺼져 있으면</strong> 새로고침해야 갱신됩니다. 4초 폴링 보완은 PR #6에 있고 아직 머지 전입니다.</li>
+        </ul>
+      </div>
+      <div class="panel">
+        <ul class="plain">
+          <li>정답 컬럼을 분리하고, 공개 시점에만 RPC로 내려주기</li>
+          <li>방 생성 시 host token 발급, questions 쓰기를 토큰으로 제한</li>
+          <li>위키 상세 페이지와 명예의 전당</li>
+          <li>위키가 커지면 Next.js로 이전 (ADR-002)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    소스: <a href="https://github.com/Linea89kr/GL_100min" target="_blank" rel="noopener">github.com/Linea89kr/GL_100min</a> · 배포: <span class="mono">gl100min.vercel.app</span>
+  </footer>
+</div>
+<!-- GitHub/Vercel 에서 단독으로 열 때 Mermaid 다이어그램 렌더링 -->
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.min.js"></script>
+<script>
+  const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  mermaid.initialize({ startOnLoad: true, theme: dark ? 'dark' : 'default', securityLevel: 'strict' });
+</script>
+</body>
+</html>
