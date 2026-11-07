@@ -9,8 +9,8 @@
 ```
 index.html          단일 페이지. 참가자/호스트/큰 화면/위키 4개 뷰 (Supabase JS 직접 호출 + Realtime)
 api/config.js       GET  브라우저에 Supabase URL·anon key 전달 (환경변수에서)
-api/judge.js        POST {answer_id}            오답이 실수로 정답인지 LLM 판정 → answers 갱신
-api/explain.js      POST {question_id}          상위 오답 3개 해설 생성 → questions.explanation
+api/judge.js        POST {answer_id}            오답이 실수로 정답인지 Gemini 판정 → answers 갱신
+api/explain.js      POST {question_id}          상위 오답 3개 Gemini 해설 생성 → questions.explanation
 api/override.js     POST {answer_id, verdict}   호스트 판정 뒤집기
 supabase/schema.sql 테이블 5개 + answer_scores 뷰 + RLS + Realtime publication
 code_artifact.html  초기 UI 목업 (로컬 상태 버전, 참고용)
