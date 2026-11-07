@@ -608,15 +608,21 @@
     };
 
     async function initSupabase() {
-      let url = SUPABASE_URL, key = SUPABASE_ANON_KEY;
+      let url = SUPABASE_URL, key = SUPABASE_ANON_KEY, why = '';
       if (!key) {
         try {
-          const cfg = await (await fetch('/api/config')).json();
+          const res = await fetch('/api/config', { cache: 'no-store' });
+          if (!res.ok) throw new Error('HTTP ' + res.status);
+          const cfg = await res.json();
           url = cfg.supabaseUrl || url;
           key = cfg.supabaseAnonKey;
-        } catch (e) {}
+          if (!key) why = `/api/config 는 응답했지만 anon key 가 비어 있음 (배포 환경: ${cfg.env}). ` +
+            '변수를 추가/수정한 뒤 Redeploy 했는지, 이 환경(Production/Preview)에 체크했는지 확인하세요.';
+        } catch (e) {
+          why = `/api/config 호출 실패 (${e.message}). 파일로 열었거나 서버리스 함수가 배포되지 않았습니다.`;
+        }
       }
-      if (!key) throw new Error('Supabase anon key 가 없습니다. Vercel 환경변수 SUPABASE_ANON_KEY 를 설정하거나 index.html 상단 SUPABASE_ANON_KEY 에 넣으세요.');
+      if (!key) throw new Error('Supabase anon key 가 없습니다 — ' + why);
       sb = window.supabase.createClient(url, key);
     }
 
